@@ -2,16 +2,17 @@ from sqlalchemy import Integer, String, TIMESTAMP, func, Text, Boolean, ForeignK
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 
-from app.database import Base
+from .base import Base
 from app.models.associations import task_tags
 
 class Task(Base):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="")
-    expiration_date: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
+    expiration_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
 
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())

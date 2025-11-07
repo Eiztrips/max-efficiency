@@ -2,7 +2,7 @@ from sqlalchemy import Integer, String, TIMESTAMP, func, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 
-from app.database import Base
+from .base import Base
 from app.models.associations import task_tags
 
 

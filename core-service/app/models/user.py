@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
 
-from app.database import Base
+from .base import Base
 from app.models.associations import category_users
 
 
