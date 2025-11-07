@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: max_efficiency_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: max_efficiency_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ai_tourist_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - max_network
+
+volumes:
+    postgres_data:
+        driver: local
+
+networks:
+    max_network:
+        driver: bridge
