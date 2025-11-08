@@ -26,6 +26,13 @@ class TagRepository(BaseRepository):
         )
         return result.scalars().all()
 
+    async def get_all_tasks_by_tag_id(self, tag_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.id == tag_id)
+        )
+        return result.scalars().all()
+
     # --------------- CREATE ----------------
 
     async def create(self, category_id: int, name: str, color: str = "gray") -> Optional[Tag]:

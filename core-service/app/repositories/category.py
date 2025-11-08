@@ -3,7 +3,8 @@ from typing import Optional
 from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
-from ..models import Category, User
+from ..models import Category, User, Tag
+
 
 class CategoryRepository(BaseRepository):
 
@@ -19,6 +20,28 @@ class CategoryRepository(BaseRepository):
             select(Category)
             .join(Category.users)
             .where(User.id == user_id)
+        )
+        return result.scalars().all()
+
+    async def get_all_joined_users_in_category(self, category_id: int) -> Sequence[User]:
+        result = await self.session.execute(
+            select(User)
+            .join(Category.users)
+            .where(Category.id == category_id)
+        )
+        return result.scalars().all()
+
+    async def get_all_tags_in_category(self, category_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.category_id == category_id)
+        )
+        return result.scalars().all()
+
+    async def get_all_tasks_in_category(self, category_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.category_id == category_id)
         )
         return result.scalars().all()
 

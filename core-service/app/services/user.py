@@ -77,7 +77,7 @@ class UserService:
 
     # --------------- UPDATE USER ----------------
 
-    async def update_user(self, max_id: int, data: dict) -> Optional[User]:
+    async def patch_user(self, max_id: int, data: dict) -> Optional[User]:
         """
         Обновляет данные пользователя.
         :param max_id: max_id пользователя
