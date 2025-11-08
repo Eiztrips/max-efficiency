@@ -64,8 +64,7 @@ class TaskService:
             _not_empty_str_validator(title, "название задачи")
             _not_empty_str_validator(description, "описание задачи")
             _positive_int_validator(category_id, "ID категории")
-            async with self.session.begin():
-                return await self.task_repo.create(user_id, title, description, expiration_date, is_completed, category_id)
+            return await self.task_repo.create(user_id, title, description, expiration_date, is_completed, category_id)
 
     # --------------- UPDATE ----------------
 
@@ -79,8 +78,7 @@ class TaskService:
         _positive_int_validator(id, "ID задачи")
         _not_empty_dict_validator(data, "данные для обновления задачи")
         _dict_keys_constant_validator(data, {"id", "user_id"})
-        async with self.session.begin():
-            return await self.task_repo.patch(id, data)
+        return await self.task_repo.patch(id, data)
 
     # --------------- DELETE ----------------
 

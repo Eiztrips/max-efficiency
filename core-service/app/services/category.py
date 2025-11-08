@@ -50,8 +50,7 @@ class CategoryService:
         """
         _positive_int_validator(user_id, "ID пользователя")
         _not_empty_str_validator(name, "название категории")
-        async with self.session.begin():
-            return await self.category_repo.create(user_id, name, description)
+        return await self.category_repo.create(user_id, name, description)
 
     # --------------- UPDATE ----------------
 
@@ -71,9 +70,8 @@ class CategoryService:
         constant_keys = {"id", "owner_id"}
         _dict_keys_constant_validator(data, constant_keys)
 
-        async  with self.session.begin():
-            return await self.category_repo.patch(id, data)
-
+        return await self.category_repo.patch(id, data)
+    
     # --------------- DELETE ----------------
 
     async def delete_category(self, id: int) -> bool:

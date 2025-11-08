@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
-from ..models import Category, User, Tag
+from ..models import Category, User, Tag, Task
 
 
 class CategoryRepository(BaseRepository):
@@ -38,10 +38,11 @@ class CategoryRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_all_tasks_in_category(self, category_id: int) -> Sequence[Tag]:
+    async def get_all_tasks_in_category(self, category_id: int) -> Sequence[Task]:
+        from ..models import Task
         result = await self.session.execute(
-            select(Tag)
-            .where(Tag.category_id == category_id)
+            select(Task)
+            .where(Task.category_id == category_id)
         )
         return result.scalars().all()
 
@@ -76,6 +77,9 @@ class CategoryRepository(BaseRepository):
         return category
 
     async def add_user(self, category_id: int, user_id: int) -> bool:
+        from sqlalchemy import insert, and_
+        from ..models.associations import category_users
+
         category = await self.get_by_id(category_id)
         user_result = await self.session.execute(
             select(User).where(User.id == user_id)
@@ -85,9 +89,21 @@ class CategoryRepository(BaseRepository):
         if not category or not user:
             return False
 
-        if user not in category.users:
-            category.users.append(user)
-            await self.session.commit()
+        existing = await self.session.execute(
+            select(category_users).where(
+                and_(
+                    category_users.c.category_id == category_id,
+                    category_users.c.user_id == user_id
+                )
+            )
+        )
+        if existing.first():
+            return True
+
+        await self.session.execute(
+            insert(category_users).values(category_id=category_id, user_id=user_id)
+        )
+        await self.session.commit()
         return True
 
     # --------------- DELETE ----------------

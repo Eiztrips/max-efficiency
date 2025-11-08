@@ -32,8 +32,7 @@ class TagService:
         """
         _positive_int_validator(category_id, "ID категории")
         _not_empty_str_validator(name, "название тега")
-        async with self.session.begin():
-            return await self.tag_repo.create(category_id, name, color)
+        return await self.tag_repo.create(category_id, name, color)
 
     # --------------- UPDATE ----------------
 
@@ -47,8 +46,7 @@ class TagService:
         _positive_int_validator(id, "ID тега")
         _not_empty_dict_validator(data, "данные для обновления тега")
         _dict_keys_constant_validator(data, {"id", "category_id"})
-        async with self.session.begin():
-            return await self.tag_repo.patch(id, data)
+        return await self.tag_repo.patch(id, data)
 
     # --------------- DELETE ----------------
 
@@ -59,8 +57,7 @@ class TagService:
         :return: True, если тег был успешно удален, иначе False
         """
         _positive_int_validator(id, "ID тега")
-        async with self.session.begin():
-            return await self.tag_repo.delete(id)
+        return await self.tag_repo.delete(id)
 
 
 # ну или хотя бы вынести в отдельный класс...
