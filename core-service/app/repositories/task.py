@@ -3,8 +3,7 @@ from typing import Optional
 from sqlalchemy import select, update, Sequence
 
 from .base import BaseRepository
-from app.models.task import Task
-from ..models import Tag
+from ..models import Task
 
 
 class TaskRepository(BaseRepository):
@@ -39,16 +38,6 @@ class TaskRepository(BaseRepository):
 
     # --------------- UPDATE ----------------
 
-    async def update(self, id: int, data: dict) -> Optional[Task]:
-        result = await self.session.execute(
-            update(Task)
-            .where(Task.id == id)
-            .values(**data)
-            .returning(Task)
-        )
-        await self.session.commit()
-        return result.scalar_one_or_none()
-
     async def patch(self, id: int, data: dict) -> Optional[Task]:
         task = await self.get_by_id(id)
 
@@ -63,21 +52,6 @@ class TaskRepository(BaseRepository):
         await self.session.commit()
         await self.session.refresh(task)
         return task
-
-    async def add_tag(self, task_id: int, tag_id: int) -> bool:
-        task = await self.get_by_id(task_id)
-        tag_result = await self.session.execute(
-            select(Tag).where(Tag.id == tag_id)
-        )
-        tag = tag_result.scalar_one_or_none()
-
-        if not task or not tag:
-            return False
-
-        if tag not in task.tags:
-            task.tags.append(tag)
-            await self.session.commit()
-        return True
 
     # --------------- DELETE ----------------
 
