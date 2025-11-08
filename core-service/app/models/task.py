@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 
 from .base import Base
-from app.models.associations import task_tags
+from .associations import task_tags
 
 class Task(Base):
     __tablename__ = "tasks"

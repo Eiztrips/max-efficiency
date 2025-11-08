@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 
 from .base import Base
-from app.models.associations import category_users
+from .associations import category_users
 
 class Category(Base):
     __tablename__ = "categories"

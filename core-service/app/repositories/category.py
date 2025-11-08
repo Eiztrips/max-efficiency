@@ -1,10 +1,10 @@
 from typing import Optional
 
-from sqlalchemy import select, update, Sequence
+from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
-from app.models.category import Category
-from app.models.user import User
+from ..models import Category, User, Tag
+
 
 class CategoryRepository(BaseRepository):
 
@@ -23,6 +23,28 @@ class CategoryRepository(BaseRepository):
         )
         return result.scalars().all()
 
+    async def get_all_joined_users_in_category(self, category_id: int) -> Sequence[User]:
+        result = await self.session.execute(
+            select(User)
+            .join(Category.users)
+            .where(Category.id == category_id)
+        )
+        return result.scalars().all()
+
+    async def get_all_tags_in_category(self, category_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.category_id == category_id)
+        )
+        return result.scalars().all()
+
+    async def get_all_tasks_in_category(self, category_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.category_id == category_id)
+        )
+        return result.scalars().all()
+
     # --------------- CREATE ----------------
 
     async def create(self, user_id: int, name: str, description: str = "") -> Optional[Category]:
@@ -37,16 +59,6 @@ class CategoryRepository(BaseRepository):
         return category
 
     # --------------- UPDATE ----------------
-
-    async def update(self, id: int, data: dict) -> Optional[Category]:
-        result = await self.session.execute(
-            update(Category)
-            .where(Category.id == id)
-            .values(**data)
-            .returning(Category)
-        )
-        await self.session.commit()
-        return result.scalar_one_or_none()
 
     async def patch(self, id: int, data: dict) -> Optional[Category]:
         category = await self.get_by_id(id)

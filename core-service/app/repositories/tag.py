@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import select, update, Sequence
 
 from .base import BaseRepository
-from app.models.tag import Tag
+from ..models.tag import Tag
 
 class TagRepository(BaseRepository):
 
@@ -26,6 +26,13 @@ class TagRepository(BaseRepository):
         )
         return result.scalars().all()
 
+    async def get_all_tasks_by_tag_id(self, tag_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.id == tag_id)
+        )
+        return result.scalars().all()
+
     # --------------- CREATE ----------------
 
     async def create(self, category_id: int, name: str, color: str = "gray") -> Optional[Tag]:
@@ -40,16 +47,6 @@ class TagRepository(BaseRepository):
         return tag
 
     # --------------- UPDATE ----------------
-
-    async def update(self, id: int, data: dict) -> Optional[Tag]:
-        result = await self.session.execute(
-            update(Tag)
-            .where(Tag.id == id)
-            .values(**data)
-            .returning(Tag)
-        )
-        await self.session.commit()
-        return result.scalar_one_or_none()
 
     async def patch(self, id: int, data: dict) -> Optional[Tag]:
         tag = await self.get_by_id(id)
