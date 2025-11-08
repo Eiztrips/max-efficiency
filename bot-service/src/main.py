@@ -1,7 +1,8 @@
 import asyncio
 import logging
 
-from maxapi import Bot, Dispatcher
+from maxapi.filters.callback_payload import CallbackPayload
+from maxapi import Bot, Dispatcher, F
 from maxapi.types import Command, MessageCreated, CallbackButton, MessageCallback, BotStarted
 from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
 from settings import settings
@@ -10,6 +11,18 @@ bot = Bot(settings.BOT_TOKEN)
 dp = Dispatcher()
 
 logging.basicConfig(level=logging.INFO)
+
+class MyPayload1(CallbackPayload, prefix='mypayload1'):
+    foo: str
+    action: str
+
+#lass MyPayload2(CallbackPayload, prefix='mypayload2'):
+#   foo: str
+#   action: str
+
+#lass MyPayload3(CallbackPayload, prefix='mypayload3'):
+#   foo: str
+#   action: str
 
 @dp.bot_started()
 async def bot_started(event: BotStarted):
@@ -20,7 +33,8 @@ async def bot_started(event: BotStarted):
              '1) Создавать для себя задачи\n'
              '2) Делить задачи по категориям\n'
              '3) Ставить задачи перед своей командой, добавляя новых пользователей\n\n'
-             'А главное - я сформирую задачи за тебя! С тебя требуется только ввести описание задачи, остальное будет на мне!',
+             'А главное - я сформирую задачи за тебя! С тебя требуется только ввести описание задачи, остальное будет на мне!\n\n'
+             'Теперь пропиши команду /start, что бы начать использование бота.',
     )
 
 @dp.message_created(Command('start'))
@@ -32,25 +46,20 @@ async def start(event: MessageCreated):
     builder.row(
         CallbackButton(
             text='Создать задачу',
-            payload='/btn_1'
+            payload=MyPayload1(foo='1', action='edit').pack(),
         )
     )
     builder.row(
         CallbackButton(
             text='Управление категориями',
-            payload='/btn_2',
-        ),
+            payload=MyPayload1(foo='2', action='edit').pack(),
+        )
+    )
+    builder.row(
         CallbackButton(
             text='Посмотреть ближайшие задачи',
-            payload='/btn_3',
-        ),
-        #
-        #    OpenAppButton(
-        #        text="Приложение",
-        #        web_app="username бота",
-        #        contact_id="Идентификатор бота"
-        #    )
-        #
+            payload=MyPayload1(foo='3', action='edit').pack(),
+        )
     )
 
     await event.message.answer(
@@ -60,10 +69,24 @@ async def start(event: MessageCreated):
         ]
     )
 
-@dp.message_callback(Command('btn_1'))
-async def btn_1(event: MessageCallback):
+@dp.message_callback(MyPayload1.filter(F.foo == '1'))
+async def create_task(event: MessageCallback, payload: MyPayload1):
     await event.message.answer(
         text = 'Опишите задачу',
+        attachments = []
+    )
+
+@dp.message_callback(MyPayload1.filter(F.foo == '2'))
+async def open_category(event: MessageCallback, payload: MyPayload1):
+    await event.message.answer(
+        text = 'Ваши категории:',
+        attachments = []
+    )
+
+@dp.message_callback(MyPayload1.filter(F.foo == '3'))
+async def nearest_task(event: MessageCallback, payload: MyPayload1):
+    await event.message.answer(
+        text = 'Ваши ближайшие задачи:',
         attachments = []
     )
 
