@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import select, update, Sequence
+from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
 from ..models.tag import Tag

@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, cast
+from typing import Optional, Sequence
 
 from sqlalchemy import select, Sequence
 
@@ -16,26 +16,26 @@ class UserRepository(BaseRepository):
 
     # --------------- GET BY MAX_ID ----------------
 
-    async def get_by_max_id(self, max_id: int) -> Optional[User]:
+    async def get_by_max_user_id(self, max_user_id: int) -> Optional[User]:
         result = await self.session.execute(select(User)
-                                            .where(User.max_id == max_id))
+                                            .where(User.max_user_id == max_user_id))
         return result.scalar_one_or_none()
 
     # следующее возможно придется переместить в tag/category/task репозитории
-    async def get_all_tags_by_max_id(self, max_id: int) -> Sequence[Tag]:
+    async def get_all_tags_by_max_user_id(self, max_user_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
-            select(Tag).join(Category).join(User).where(User.max_id == max_id)
+            select(Tag).join(Category).join(User).where(User.max_user_id == max_user_id)
         )
         return result.scalars().all()
 
-    async def get_all_categories_by_max_id(self, max_id: int) -> Sequence[Category]:
+    async def get_all_categories_by_max_user_id(self, max_user_id: int) -> Sequence[Category]:
         result = await self.session.execute(
-            select(Category).join(User).where(User.max_id == max_id)
+            select(Category).join(User).where(User.max_user_id == max_user_id)
         )
         return result.scalars().all()
 
-    async def get_all_tasks_by_max_id(self, max_id: int) -> Sequence[Task]:
-        user = await self.get_by_max_id(max_id)
+    async def get_all_tasks_by_max_user_id(self, max_user_id: int) -> Sequence[Task]:
+        user = await self.get_by_max_user_id(max_user_id)
         if not user:
             return []
         result = await self.session.execute(
@@ -52,9 +52,9 @@ class UserRepository(BaseRepository):
 
     # --------------- CREATE ----------------
 
-    async def create(self, max_id: int, username: str) -> User:
+    async def create(self, max_user_id: int, username: str) -> User:
         user = User(
-            max_id=max_id, username=username
+            max_user_id=max_user_id, username=username
         )
 
         self.session.add(user)

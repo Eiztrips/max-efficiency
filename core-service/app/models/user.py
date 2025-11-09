@@ -11,7 +11,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    max_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    max_user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     username: Mapped[str] = mapped_column(nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())

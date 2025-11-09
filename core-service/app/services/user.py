@@ -11,16 +11,16 @@ class UserService:
 
     # --------------- GET USER ----------------
 
-    async def get_user_by_max_id(self, max_id: int) -> Optional[User]:
+    async def get_by_max_user_id(self, max_user_id: int) -> Optional[User]:
         """
-        Возвращает пользователя по его max_id.
-        :param max_id: max_id пользователя
+        Возвращает пользователя по его max_user_id.
+        :param max_user_id: max_user_id пользователя
         :return: объект пользователя или None, если пользователь не найден
         """
-        _positive_int_validator(max_id, "max_id пользователя")
-        return await self.user_repo.get_by_max_id(max_id)
+        _positive_int_validator(max_user_id, "max_user_id пользователя")
+        return await self.user_repo.get_by_max_user_id(max_user_id)
 
-    async def get_user_by_username(self, username: str) -> Optional[User]:
+    async def get_by_username(self, username: str) -> Optional[User]:
         """
         Возвращает пользователя по его username.
         :param username: имя пользователя
@@ -32,61 +32,61 @@ class UserService:
     # --------------- GET USER RELATED DATA ----------------
 
     # возможно не пригодится
-    async def get_user_tags(self, max_id: int) -> Sequence[Tag]:
+    async def get_tags(self, max_user_id: int) -> Sequence[Tag]:
         """
-        Возвращает все теги пользователя по его max_id.
-        :param max_id: max_id пользователя
+        Возвращает все теги пользователя по его max_user_id.
+        :param max_user_id: max_user_id пользователя
         :return: список тегов пользователя
         """
-        _positive_int_validator(max_id, "max_id пользователя")
-        return await self.user_repo.get_all_tags_by_max_id(max_id)
+        _positive_int_validator(max_user_id, "max_user_id пользователя")
+        return await self.user_repo.get_all_tags_by_max_user_id(max_user_id)
 
-    async def get_user_categories(self, max_id: int) -> Sequence[Category]:
+    async def get_categories(self, max_user_id: int) -> Sequence[Category]:
         """
-        Возвращает все категории пользователя по его max_id.
-        :param max_id: max_id пользователя
+        Возвращает все категории пользователя по его max_user_id.
+        :param max_user_id: max_user_id пользователя
         :return: список категорий пользователя
         """
-        _positive_int_validator(max_id, "max_id пользователя")
-        return await self.user_repo.get_all_categories_by_max_id(max_id)
+        _positive_int_validator(max_user_id, "max_user_id пользователя")
+        return await self.user_repo.get_all_categories_by_max_user_id(max_user_id)
 
-    async def get_user_tasks(self, max_id: int) -> Sequence[Task]:
+    async def get_tasks(self, max_user_id: int) -> Sequence[Task]:
         """
-        Возвращает все задачи пользователя по его max_id.
-        :param max_id: max_id пользователя
+        Возвращает все задачи пользователя по его max_user_id.
+        :param max_user_id: max_user_id пользователя
         :return: список задач пользователя
         """
-        _positive_int_validator(max_id, "max_id пользователя")
-        return await self.user_repo.get_all_tasks_by_max_id(max_id)
+        _positive_int_validator(max_user_id, "max_user_id пользователя")
+        return await self.user_repo.get_all_tasks_by_max_user_id(max_user_id)
 
     # --------------- CREATE USER ----------------
 
-    async def get_or_create_user(self, max_id: int, username: str) -> User:
+    async def get_or_create_user(self, max_user_id: int, username: str) -> User:
         """
         Создает нового пользователя.
-        :param max_id: max_id пользователя
+        :param max_user_id: max_user_id пользователя
         :param username: имя пользователя
         :return: созданный объект пользователя
         """
-        _positive_int_validator(max_id, "max_id пользователя")
+        _positive_int_validator(max_user_id, "max_user_id пользователя")
         _not_empty_str_validator(username, "username пользователя")
 
-        existing_user_by_max_id = await self.user_repo.get_by_max_id(max_id)
-        return existing_user_by_max_id or await self.user_repo.create(max_id, username)
+        existing_user_by_max_user_id = await self.user_repo.get_by_max_user_id(max_user_id)
+        return existing_user_by_max_user_id or await self.user_repo.create(max_user_id, username)
 
     # --------------- UPDATE USER ----------------
 
-    async def patch_user(self, max_id: int, data: dict) -> Optional[User]:
+    async def patch(self, max_user_id: int, data: dict) -> Optional[User]:
         """
         Обновляет данные пользователя.
-        :param max_id: max_id пользователя
+        :param max_user_id: max_user_id пользователя
         :param data: словарь с данными для обновления
         :return: обновленный объект пользователя или None, если пользователь не найден
         """
-        _positive_int_validator(max_id, "ID пользователя")
+        _positive_int_validator(max_user_id, "ID пользователя")
         _not_empty_dict_validator(data, "данные для обновления пользователя")
-        _dict_keys_constant_validator(data, {"id", "max_id"})
-        return await self.user_repo.patch(max_id, data)
+        _dict_keys_constant_validator(data, {"id", "max_user_id"})
+        return await self.user_repo.patch(max_user_id, data)
 
 # Что бы не оверинженерить оставлю так. При усложнении логики - перейти на пудантек в schemas
 def _positive_int_validator(value: int, field_name: str):

@@ -2,14 +2,15 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-class UserBase(BaseModel):
-    max_user_id: int
-    username: Optional[str] = None
+class TagBase(BaseModel):
+    category_id: int
+    name: str
+    color: Optional[str] = "#FFFFFF"
 
-class UserCreate(UserBase):
+class TagCreate(TagBase):
     pass
 
-class UserRead(UserBase):
+class TagRead(TagBase):
     id: int
     created_at: datetime
     updated_at: datetime

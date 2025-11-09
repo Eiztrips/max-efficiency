@@ -11,7 +11,16 @@ class TagService:
 
     # --------------- GET ----------------
 
-    async def get_all_tasks_by_tag_id(self, tag_id: int) -> Sequence[Task]:
+    async def get_by_id(self, id: int) -> Optional[Tag]:
+        """
+        Возвращает тег по его ID.
+        :param id: ID тега
+        :return: объект тега или None, если тег не найден
+        """
+        _positive_int_validator(id, "ID тега")
+        return await self.tag_repo.get_by_id(id)
+
+    async def get_tasks_by_tag_id(self, tag_id: int) -> Sequence[Task]:
         """
         Возвращает все задачи, связанные с тегом по его ID.
         :param tag_id: ID тега
@@ -22,7 +31,7 @@ class TagService:
 
     # --------------- CREATE ----------------
 
-    async def create_tag(self, category_id: int, name: str, color: str = "#FFFFFF") -> Optional[Tag]:
+    async def create(self, category_id: int, name: str, color: str = "#FFFFFF") -> Optional[Tag]:
         """
         Создает новый тег в категории.
         :param category_id: ID категории, к которой принадлежит тег
@@ -36,7 +45,7 @@ class TagService:
 
     # --------------- UPDATE ----------------
 
-    async def patch_tag(self, id: int, data: dict) -> Optional[Tag]:
+    async def patch(self, id: int, data: dict) -> Optional[Tag]:
         """
         Обновляет данные тега.
         :param id: ID тега
@@ -50,7 +59,7 @@ class TagService:
 
     # --------------- DELETE ----------------
 
-    async def delete_tag(self, id: int) -> bool:
+    async def delete(self, id: int) -> bool:
         """
         Удаляет тег по его ID.
         :param id: ID тега

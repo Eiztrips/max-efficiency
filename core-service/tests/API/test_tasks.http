@@ -1,0 +1,96 @@
+### ===== TASK TESTS =====
+### Base URL
+@baseUrl = http://localhost:8000/api/v1
+
+### ===== DEBUG =====
+
+### Получить все задачи (DEBUG)
+GET {{baseUrl}}/tasks/
+Content-Type: application/json
+
+### ===== CREATE =====
+
+### Создать новую задачу
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "user_id": "1",
+  "title": "Завершить проект",
+  "category_id": 1,
+  "description": "Нужно завершить все задачи проекта",
+  "expiration_date": "2025-12-31T23:59:59",
+  "is_completed": false
+}
+
+### Создать задачу с минимальными данными
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "user_id": "1",
+  "title": "Простая задача"
+}
+
+### Создать задачу без категории
+POST {{baseUrl}}/tasks
+Content-Type: application/json
+
+{
+  "user_id": "1",
+  "title": "Задача без категории",
+  "description": "Описание задачи"
+}
+
+### ===== GET =====
+
+### Получить задачу по ID
+GET {{baseUrl}}/tasks/1
+Content-Type: application/json
+
+### Получить несуществующую задачу (должна вернуться 404)
+GET {{baseUrl}}/tasks/99999
+Content-Type: application/json
+
+### Получить все задачи пользователя
+GET {{baseUrl}}/tasks?user_id=1
+Content-Type: application/json
+
+### Получить задачи с фильтрацией по категории
+GET {{baseUrl}}/tasks?user_id=1&category_id=1
+Content-Type: application/json
+
+### Получить задачи с фильтрацией по тегу
+GET {{baseUrl}}/tasks?user_id=1&tag_id=1
+Content-Type: application/json
+
+### Получить задачи с фильтрацией по статусу выполнения
+GET {{baseUrl}}/tasks?user_id=1&is_completed=false
+Content-Type: application/json
+
+### Получить завершенные задачи
+GET {{baseUrl}}/tasks?user_id=1&is_completed=true
+Content-Type: application/json
+
+### Получить задачи с фильтрацией по датам
+GET {{baseUrl}}/tasks?user_id=1&from_date=2025-01-01&to_date=2025-12-31
+Content-Type: application/json
+
+### Получить задачи с поиском по тексту
+GET {{baseUrl}}/tasks?user_id=1&search=проект
+Content-Type: application/json
+
+### Получить задачи с комплексной фильтрацией
+GET {{baseUrl}}/tasks?user_id=1&category_id=1&is_completed=false&search=задача
+Content-Type: application/json
+
+### ===== DELETE =====
+
+### Удалить задачу по ID
+DELETE {{baseUrl}}/tasks/1
+Content-Type: application/json
+
+### Попытка удалить несуществующую задачу (должна вернуться 404)
+DELETE {{baseUrl}}/tasks/99999
+Content-Type: application/json
+

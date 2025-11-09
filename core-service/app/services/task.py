@@ -59,9 +59,18 @@ class TaskService:
             search=search
         )
 
+    async def get_by_id(self, id: int) -> Optional[Task]:
+        """
+        Возвращает задачу по её ID.
+        :param id: ID задачи
+        :return: объект задачи или None, если задача не найдена
+        """
+        _positive_int_validator(id, "ID задачи")
+        return await self.task_repo.get_by_id(id)
+
     # --------------- CREATE ----------------
 
-    async def create_task(self, user_id: int, title: str, description: str, expiration_date: Optional[str],
+    async def create(self, user_id: int, title: str, description: str, expiration_date: Optional[str],
                             is_completed: bool, category_id: int) -> Optional[Task]:
             """
             Создает новую задачу для пользователя.
@@ -81,7 +90,7 @@ class TaskService:
 
     # --------------- UPDATE ----------------
 
-    async def patch_task(self, id: int, data: dict) -> Optional[Task]:
+    async def patch(self, id: int, data: dict) -> Optional[Task]:
         """
         Обновляет данные задачи.
         :param id: ID задачи
@@ -95,7 +104,7 @@ class TaskService:
 
     # --------------- DELETE ----------------
 
-    async def delete_task(self, id: int) -> bool:
+    async def delete(self, id: int) -> bool:
         """
         Удаляет задачу по её ID.
         :param id: ID задачи

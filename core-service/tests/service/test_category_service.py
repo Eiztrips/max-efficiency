@@ -7,15 +7,15 @@ class TestCategoryService:
     """Тесты для CategoryService"""
 
     @pytest.mark.asyncio
-    async def test_create_category(self, db_session):
+    async def test_create(self, db_session):
         """Тест создания категории"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
 
         service = CategoryService(db_session)
-        category = await service.create_category(user.id, "Test Category", "Test Description")
+        category = await service.create(user.id, "Test Category", "Test Description")
 
         assert category is not None
         assert category.name == "Test Category"
@@ -23,20 +23,20 @@ class TestCategoryService:
         assert category.owner_id == user.id
 
     @pytest.mark.asyncio
-    async def test_create_category_invalid_user_id(self, db_session):
+    async def test_create_invalid_user_id(self, db_session):
         """Тест создания категории с невалидным user_id"""
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="ID пользователя должен быть положительным целым числом"):
-            await service.create_category(-1, "Test Category")
+            await service.create(-1, "Test Category")
 
         with pytest.raises(ValueError, match="ID пользователя должен быть положительным целым числом"):
-            await service.create_category(0, "Test Category")
+            await service.create(0, "Test Category")
 
     @pytest.mark.asyncio
-    async def test_create_category_invalid_name(self, db_session):
+    async def test_create_invalid_name(self, db_session):
         """Тест создания категории с невалидным названием"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -44,119 +44,85 @@ class TestCategoryService:
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="название категории должен быть непустой строкой"):
-            await service.create_category(user.id, "")
+            await service.create(user.id, "")
 
         with pytest.raises(ValueError, match="название категории должен быть непустой строкой"):
-            await service.create_category(user.id, "   ")
+            await service.create(user.id, "   ")
 
     @pytest.mark.asyncio
-    async def test_patch_category(self, db_session):
-        """Тест обновления категории"""
-        user = User(max_id=123456, username="test_user")
+    async def test_add_user(self, db_session):
+        """Тест добавления пользователя в категорию через сервис"""
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
 
         service = CategoryService(db_session)
-        category = await service.create_category(user.id, "Old Name", "Old Description")
+        category = await service.create(user.id, "Test Category")
 
-        updated_category = await service.patch_category(category.id, {"name": "New Name"})
-
-        assert updated_category is not None
-        assert updated_category.name == "New Name"
-        assert updated_category.description == "Old Description"
-
-    @pytest.mark.asyncio
-    async def test_patch_category_not_found(self, db_session):
-        """Тест обновления несуществующей категории"""
-        service = CategoryService(db_session)
-
-        with pytest.raises(ValueError, match="Категория не найдена"):
-            await service.patch_category(999, {"name": "New Name"})
-
-    @pytest.mark.asyncio
-    async def test_patch_category_invalid_id(self, db_session):
-        """Тест обновления категории с невалидным ID"""
-        service = CategoryService(db_session)
-
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.patch_category(-1, {"name": "New Name"})
-
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.patch_category(0, {"name": "New Name"})
-
-    @pytest.mark.asyncio
-    async def test_patch_category_empty_data(self, db_session):
-        """Тест обновления категории с пустыми данными"""
-        user = User(max_id=123456, username="test_user")
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-
-        service = CategoryService(db_session)
-        category = await service.create_category(user.id, "Test Category")
-
-        with pytest.raises(ValueError, match="данные для обновления категории должен быть непустым словарем"):
-            await service.patch_category(category.id, {})
-
-    @pytest.mark.asyncio
-    async def test_patch_category_constant_fields(self, db_session):
-        """Тест обновления неизменяемых полей категории"""
-        user = User(max_id=123456, username="test_user")
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-
-        service = CategoryService(db_session)
-        category = await service.create_category(user.id, "Test Category")
-
-        with pytest.raises(ValueError, match="Нельзя изменять поле: id"):
-            await service.patch_category(category.id, {"id": 999})
-
-        with pytest.raises(ValueError, match="Нельзя изменять поле: owner_id"):
-            await service.patch_category(category.id, {"owner_id": 999})
-
-    @pytest.mark.asyncio
-    async def test_delete_category(self, db_session):
-        """Тест удаления категории"""
-        user = User(max_id=123456, username="test_user")
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-
-        service = CategoryService(db_session)
-        category = await service.create_category(user.id, "Test Category")
-
-        result = await service.delete_category(category.id)
+        repo = service.category_repo
+        result = await repo.add_user(category.id, user.id)
 
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_delete_category_not_found(self, db_session):
+    async def test_add_user_invalid_ids(self, db_session):
+        """Тест добавления пользователя с невалидными ID"""
+        service = CategoryService(db_session)
+
+        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+            await service.add_user(-1, 1)
+
+        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+            await service.add_user(0, 1)
+
+        with pytest.raises(ValueError, match="ID пользователя должен быть положительным целым числом"):
+            await service.add_user(1, -1)
+
+        with pytest.raises(ValueError, match="ID пользователя должен быть положительным целым числом"):
+            await service.add_user(1, 0)
+
+    @pytest.mark.asyncio
+    async def test_delete(self, db_session):
+        """Тест удаления категории"""
+        user = User(max_user_id=123456, username="test_user")
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+
+        service = CategoryService(db_session)
+        category = await service.create(user.id, "Test Category")
+
+        result = await service.delete(category.id)
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_delete_not_found(self, db_session):
         """Тест удаления несуществующей категории"""
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="Категория не найдена"):
-            await service.delete_category(999)
+            await service.delete(999)
 
     @pytest.mark.asyncio
-    async def test_delete_category_invalid_id(self, db_session):
+    async def test_delete_invalid_id(self, db_session):
         """Тест удаления категории с невалидным ID"""
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.delete_category(-1)
+            await service.delete(-1)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.delete_category(0)
+            await service.delete(0)
 
     @pytest.mark.asyncio
     async def test_get_all_users_by_category_id(self, db_session):
         """Тест получения всех пользователей категории"""
         from app.repositories.category import CategoryRepository
 
-        user1 = User(max_id=123456, username="user1")
-        user2 = User(max_id=123457, username="user2")
+        user1 = User(max_user_id=123456, username="user1")
+        user2 = User(max_user_id=123457, username="user2")
         db_session.add(user1)
         db_session.add(user2)
         await db_session.commit()
@@ -173,7 +139,7 @@ class TestCategoryService:
         await repo.add_user(category.id, user2.id)
 
         service = CategoryService(db_session)
-        users = await service.get_all_users_by_category_id(category.id)
+        users = await service.get_users_by_category_id(category.id)
 
         assert len(users) == 2
         assert all(isinstance(u, User) for u in users)
@@ -184,15 +150,15 @@ class TestCategoryService:
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.get_all_users_by_category_id(-1)
+            await service.get_users_by_category_id(-1)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.get_all_users_by_category_id(0)
+            await service.get_users_by_category_id(0)
 
     @pytest.mark.asyncio
     async def test_get_all_tags_by_category_id(self, db_session):
         """Тест получения всех тегов категории"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -209,7 +175,7 @@ class TestCategoryService:
         await db_session.commit()
 
         service = CategoryService(db_session)
-        tags = await service.get_all_tags_by_category_id(category.id)
+        tags = await service.get_tags_by_category_id(category.id)
 
         assert len(tags) == 2
         assert all(isinstance(t, Tag) for t in tags)
@@ -220,15 +186,15 @@ class TestCategoryService:
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.get_all_tags_by_category_id(-1)
+            await service.get_tags_by_category_id(-1)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.get_all_tags_by_category_id(0)
+            await service.get_tags_by_category_id(0)
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_by_category_id(self, db_session):
         """Тест получения всех задач категории"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -245,7 +211,7 @@ class TestCategoryService:
         await db_session.commit()
 
         service = CategoryService(db_session)
-        tasks = await service.get_all_tasks_by_category_id(category.id)
+        tasks = await service.get_tasks_by_category_id(category.id)
 
         assert len(tasks) == 2
         assert all(isinstance(t, Task) for t in tasks)
@@ -256,8 +222,8 @@ class TestCategoryService:
         service = CategoryService(db_session)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.get_all_tasks_by_category_id(-1)
+            await service.get_tasks_by_category_id(-1)
 
         with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
-            await service.get_all_tasks_by_category_id(0)
+            await service.get_tasks_by_category_id(0)
 

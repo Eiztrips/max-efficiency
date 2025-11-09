@@ -17,6 +17,6 @@ class Category(Base):
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     owner: Mapped["User"] = relationship(back_populates="categories_owned")
-    users: Mapped[list["User"]] = relationship(secondary=category_users, back_populates="categories_joined")
+    users: Mapped[list["User"]] = relationship(secondary=category_users, back_populates="categories_joined", lazy="selectin")
     tasks: Mapped[list["Task"]] = relationship(back_populates="category", cascade="all, delete-orphan")
     tags: Mapped[list["Tag"]] = relationship(back_populates="category", cascade="all, delete-orphan")

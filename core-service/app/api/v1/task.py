@@ -1,0 +1,100 @@
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ... import models
+from ...schemas import TaskRead, TaskCreate
+from ...database import get_db
+from ...services import TaskService
+
+router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
+
+
+def get_task_service(db: AsyncSession = Depends(get_db)) -> TaskService:
+    return TaskService(db)
+
+# --------------- DEBUG: Получить все таски ----------------
+
+@router.get("/", response_model=List[TaskRead])
+async def get_tasks(
+    db: AsyncSession = Depends(get_db)
+):
+    """Получить все таски (DEBUG)"""
+    result = await db.execute(select(models.Task))
+    tasks = result.scalars().all()
+    return tasks
+
+# --------------- GET ----------------
+
+@router.get("", response_model=List[TaskRead])
+async def get_tasks(
+    user_id: int,
+    category_id: int = None,
+    tag_id: int = None,
+    status: str = None,
+    is_completed: bool = None,
+    from_date: str = None,
+    to_date: str = None,
+    search: str = None,
+    task_service: TaskService = Depends(get_task_service)
+):
+    """Получить задачи с фильтрацией"""
+    tasks = await task_service.get_tasks(
+        user_id=user_id,
+        category_id=category_id,
+        tag_id=tag_id,
+        status=status,
+        is_completed=is_completed,
+        from_date=from_date,
+        to_date=to_date,
+        search=search
+    )
+    return tasks
+
+@router.get("/{id}", response_model=TaskRead)
+async def get_task(
+    id: int,
+    task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Получить задачу по ID
+    """
+    task = await task_service.get_by_id(id)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID={id} не найдена"
+        )
+    return task
+
+# --------------- CREATE ----------------
+
+@router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
+async def create_task(
+    task_create: TaskCreate,
+    task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Создать новую задачу
+    """
+    # TODO: Создание задачке через ИИшку
+
+# --------------- DELETE ----------------
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task(
+    id: int,
+    task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Удалить задачу по ID
+    """
+    success = await task_service.delete(id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID={id} не найдена"
+        )
+    return None

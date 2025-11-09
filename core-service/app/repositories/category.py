@@ -61,49 +61,29 @@ class CategoryRepository(BaseRepository):
 
     # --------------- UPDATE ----------------
 
-    async def patch(self, id: int, data: dict) -> Optional[Category]:
+    async def patch(self, id: int, data: dict) -> bool:
         category = await self.get_by_id(id)
-
         if not category:
-            return None
-
-        for k, v in data.items():
-            if hasattr(category, k):
-                setattr(category, k, v)
-
+            return False
+        for key, value in data.items():
+            setattr(category, key, value)
         self.session.add(category)
         await self.session.commit()
         await self.session.refresh(category)
-        return category
+        return True
 
     async def add_user(self, category_id: int, user_id: int) -> bool:
-        from sqlalchemy import insert, and_
-        from ..models.associations import category_users
-
         category = await self.get_by_id(category_id)
-        user_result = await self.session.execute(
-            select(User).where(User.id == user_id)
-        )
-        user = user_result.scalar_one_or_none()
-
-        if not category or not user:
+        if not category:
+            return False
+        user = await self.session.get(User, user_id)
+        if not user:
             return False
 
-        existing = await self.session.execute(
-            select(category_users).where(
-                and_(
-                    category_users.c.category_id == category_id,
-                    category_users.c.user_id == user_id
-                )
-            )
-        )
-        if existing.first():
-            return True
-
-        await self.session.execute(
-            insert(category_users).values(category_id=category_id, user_id=user_id)
-        )
+        category.users.append(user)
+        self.session.add(category)
         await self.session.commit()
+        await self.session.refresh(category)
         return True
 
     # --------------- DELETE ----------------

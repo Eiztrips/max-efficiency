@@ -15,7 +15,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="Work tasks", user_id=user.id)
         task = await task_repo.create(
             user_id=user.id,
@@ -48,8 +48,8 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user1 = await user_repo.create(max_id=123456, username="user1")
-        user2 = await user_repo.create(max_id=789012, username="user2")
+        user1 = await user_repo.create(max_user_id=123456, username="user1")
+        user2 = await user_repo.create(max_user_id=789012, username="user2")
         category = await category_repo.create(name="Work", description="", user_id=user1.id)
 
         await task_repo.create(user_id=user1.id, title="Task 1", description="", expiration_date=None,
@@ -71,7 +71,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category1 = await category_repo.create(name="Work", description="", user_id=user.id)
         category2 = await category_repo.create(name="Home", description="", user_id=user.id)
 
@@ -94,7 +94,7 @@ class TestTaskRepository:
         tag_repo = TagRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
         tag = await tag_repo.create(name="urgent", color="red", category_id=category.id)
 
@@ -122,7 +122,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         await task_repo.create(user_id=user.id, title="Completed Task", description="", expiration_date=None,
@@ -143,7 +143,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         date1 = datetime.now() + timedelta(days=1)
@@ -172,7 +172,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         await task_repo.create(user_id=user.id, title="Important Meeting", description="Discuss project",
@@ -192,7 +192,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
         expiration = datetime.now() + timedelta(days=7)
 
@@ -220,7 +220,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
         task = await task_repo.create(
             user_id=user.id,
@@ -257,7 +257,7 @@ class TestTaskRepository:
         category_repo = CategoryRepository(db_session)
         task_repo = TaskRepository(db_session)
 
-        user = await user_repo.create(max_id=123456, username="test_user")
+        user = await user_repo.create(max_user_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
         task = await task_repo.create(
             user_id=user.id,

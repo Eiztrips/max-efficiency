@@ -11,7 +11,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_get_by_id(self, db_session):
         """Тест получения тега по ID"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -42,7 +42,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_get_by_name(self, db_session):
         """Тест получения тега по имени"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -71,7 +71,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_get_by_category_id(self, db_session):
         """Тест получения всех тегов категории"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -102,7 +102,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_get_all_tasks_by_tag_id(self, db_session):
         """Тест получения всех задач по ID тега"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -138,7 +138,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_create(self, db_session):
         """Тест создания тега"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -159,7 +159,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_create_with_default_color(self, db_session):
         """Тест создания тега с цветом по умолчанию"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -178,7 +178,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_patch(self, db_session):
         """Тест обновления тега"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -209,7 +209,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_delete(self, db_session):
         """Тест удаления тега"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
@@ -239,7 +239,7 @@ class TestTagRepository:
     @pytest.mark.asyncio
     async def test_get_all_tags(self, db_session):
         """Тест получения всех тегов"""
-        user = User(max_id=123456, username="test_user")
+        user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
