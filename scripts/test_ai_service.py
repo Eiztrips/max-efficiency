@@ -9,26 +9,49 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
-logger = logging.getLogger("test_ai_service")
+logger = logging.getLogger("test_taskai")
 
 KAFKA_BOOTSTRAP = "localhost:9094"
-INPUT_TOPIC = "texts_to_summarize"
-OUTPUT_TOPIC = "summaries"
+INPUT_TOPIC = "ai-service"
+OUTPUT_TOPIC = "main-service"
 
 # Тестовые данные
 TEST_MESSAGES = [
-    "Купить молоко, хлеб и яйца в магазине до вечера",
-    "Позвонить врачу и записаться на прием в следующий вторник в 10:00",
-    "Подготовить презентацию по проекту до пятницы, включить графики и статистику",
-    "Отправить отчет начальнику о проделанной работе за неделю",
-    "Забронировать билеты на самолет до 15 декабря для поездки в Санкт-Петербург",
+    {
+        "user_id": "test_user_1",
+        "text": "Купить молоко, хлеб и яйца в магазине до вечера",
+        "recent_tags": ["покупки", "продукты"],
+        "recent_zones": ["личное", "работа"]
+    },
+    {
+        "user_id": "test_user_1",
+        "text": "Позвонить врачу и записаться на прием в следующий вторник в 10:00",
+        "recent_tags": ["здоровье", "звонки"],
+        "recent_zones": ["личное"]
+    },
+    {
+        "user_id": "test_user_2",
+        "text": "Подготовить презентацию по проекту до пятницы, включить графики и статистику",
+        "recent_tags": ["работа", "презентация", "проект"],
+        "recent_zones": ["работа", "личное"]
+    },
+    {
+        "user_id": "test_user_2",
+        "text": "Отправить отчет начальнику о проделанной работе за неделю",
+        "recent_tags": ["работа", "отчет"],
+        "recent_zones": ["работа"]
+    },
+    {
+        "user_id": "test_user_3",
+        "text": "Забронировать билеты на самолет до 15 декабря для поездки в Санкт-Петербург"
+    },
 ]
 
 def send_test_messages():
     try:
         producer = KafkaProducer(
             bootstrap_servers=KAFKA_BOOTSTRAP,
-            value_serializer=lambda v: v.encode('utf-8')
+            value_serializer=lambda v: json.dumps(v, ensure_ascii=False).encode('utf-8')
         )
 
         logger.info(f"Sending {len(TEST_MESSAGES)} test messages to {INPUT_TOPIC}...")
@@ -37,8 +60,8 @@ def send_test_messages():
             future = producer.send(INPUT_TOPIC, value=message)
             record_metadata = future.get(timeout=10)
             logger.info(
-                f"Message {i + 1} sent | partition={record_metadata.partition} "
-                f"offset={record_metadata.offset}"
+                f"Message {i + 1} sent | user_id={message['user_id']} | "
+                f"partition={record_metadata.partition} offset={record_metadata.offset}"
             )
 
         producer.flush()
@@ -57,7 +80,7 @@ def consume_results(timeout_seconds=120):
             bootstrap_servers=KAFKA_BOOTSTRAP,
             auto_offset_reset='earliest',
             enable_auto_commit=True,
-            group_id='test-consumer-group',
+            group_id='max-efficiency',
             value_deserializer=lambda v: json.loads(v.decode('utf-8')),
             consumer_timeout_ms=timeout_seconds * 1000
         )

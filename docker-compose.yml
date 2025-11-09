@@ -80,11 +80,13 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
+    volumes:
+      - ./ai-service/config.yaml:/app/config.yaml:ro
     environment:
       KAFKA_BOOTSTRAP: kafka:9092
-      KAFKA_INPUT_TOPIC: texts_to_summarize
-      KAFKA_OUTPUT_TOPIC: summaries
-      KAFKA_GROUP_ID: summarizer-group
+      KAFKA_INPUT_TOPIC: ai-service
+      KAFKA_OUTPUT_TOPIC: main-service
+      KAFKA_GROUP_ID: max-efficiency
       SUMMARIZER_MODEL: qwen3:1.7b
       LOG_LEVEL: INFO
       OLLAMA_HOST: http://ollama:11434

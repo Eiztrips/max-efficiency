@@ -8,6 +8,7 @@ Kafka-сервис для работы с тасками с использова
 """
 import os
 import json
+import yaml
 import logging
 from datetime import datetime
 from typing import Optional
@@ -19,10 +20,10 @@ from pydantic import BaseModel, Field
 
 # Конфигурация env задается композом
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092")
-INPUT_TOPIC = os.getenv("KAFKA_INPUT_TOPIC", "texts_to_summarize")
-OUTPUT_TOPIC = os.getenv("KAFKA_OUTPUT_TOPIC", "summaries")
-GROUP_ID = os.getenv("KAFKA_GROUP_ID", "summarizer-group")
-MODEL = os.getenv("SUMMARIZER_MODEL", "gemma3:4b")
+INPUT_TOPIC = os.getenv("KAFKA_INPUT_TOPIC", "ai-service")
+OUTPUT_TOPIC = os.getenv("KAFKA_OUTPUT_TOPIC", "main-service")
+GROUP_ID = os.getenv("KAFKA_GROUP_ID", "max-efficiency")
+MODEL = os.getenv("SUMMARIZER_MODEL", "qwen3:1.7b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
@@ -31,6 +32,15 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("taskai")
+
+# Load configuration
+def load_config() -> dict:
+    config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
+    with open(config_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+CONFIG = load_config()
+SYSTEM_PROMPT = CONFIG.get("PREPROMT", "")
 
 
 class Task(BaseModel):
@@ -43,82 +53,11 @@ class Task(BaseModel):
     # Возможная зона к которой эта таска относится?
     zone: str
 
-
-async def generate_task_metadata(text: str) -> Optional[Task]:
-    try:
-        client = AsyncClient(host=OLLAMA_HOST)
-        response = await client.chat(
-            messages=[
-                {
-                    'role': 'system',
-                    'content': '''
-Ты — эксперт по извлечению и структурированию задач из пользовательских текстов. Твоя задача: проанализировать входной текст, выявить суть задачи и сгенерировать точные метаданные в формате строгого JSON. Вывод должен быть ВАЛИДНЫМ JSON-объектом, соответствующим следующей схеме (не добавляй лишние поля, не меняй типы):
-
-{
-  "name": "строка (краткое название задачи, 1-5 слов)",
-  "description": "строка (сжатая выжимка задачи, 1-3 предложения, фокус на ключевых действиях)",
-  "tags": ["массив строк (3-5 релевантных тегов, короткие, без пробелов, например: 'todo', 'urgent', 'coding')"],
-  "expiration_date": "строка в формате YYYY-MM-DD ИЛИ null (только если в тексте четко указана парсибельная дата; если даты нет или она неясная/белиберда — обязательно null)",
-  "zone": "строка (категория зоны: 'work', 'personal', 'tech', 'health', 'education' или 'general', если неясно)"
-}
-
-ПРАВИЛА:
-- Будь точен: извлекай только из текста, не галлюцинируй детали.
-- expiration_date: 
-  - Четкая дата (например, "до 31 декабря 2025" или "2025-12-31") → конвертируй в YYYY-MM-DD.
-  - Нет даты → null.
-  - Белиберда ("завтра", "скоро", "в ближайшее время", "летом") → null. Не угадывай!
-- Если текст не содержит задачи (слишком короткий, оффтопик) — все равно генерируй JSON с пустыми/дефолтными значениями, но не null для обязательных строк (используй "" для name/description/zone).
-- Вывод: ТОЛЬКО JSON-объект. Без ```json, без текста, без объяснений. Если JSON сломается — моделька сломается.
-
-ПРИМЕРЫ:
-
-Вход: "Напомни купить молоко завтра вечером. Важно не забыть!"
-Вывод: {"name": "Купить молоко", "description": "Приобрести молоко в магазине вечером завтра.", "tags": ["shopping", "urgent", "personal"], "expiration_date": null, "zone": "personal"}
-
-Вход: "Разработать API для аутентификации пользователей до 15 марта 2026 года. Использовать JWT."
-Вывод: {"name": "Разработать API аутентификации", "description": "Создать эндпоинты для регистрации/логина с JWT-токенами.", "tags": ["coding", "api", "security", "dev"], "expiration_date": "2026-03-15", "zone": "work"}
-
-Вход: "Просто привет, как дела?"
-Вывод: {"name": "", "description": "", "tags": [], "expiration_date": null, "zone": "general"}
-
-Вход: "Сделать отчет по продажам к пятнице, но пятница какая-то неопределенная."
-Вывод: {"name": "Отчет по продажам", "description": "Подготовить summary продаж за период.", "tags": ["report", "sales", "work"], "expiration_date": null, "zone": "work"}
-'''
-                },
-                {
-                    'role': 'user',
-                    'content': f'Создай задачу из следующего текста:\n\n{text}'
-                }
-            ],
-            model=MODEL,
-            format=Task.model_json_schema(),
-        )
-
-        # Robust extraction: support both dict response and object-like response
-        content = None
-        if isinstance(response, dict):
-            content = response.get("message", {}).get("content")
-        else:
-            # try object-style .message.content
-            try:
-                msg = getattr(response, "message", None)
-                if msg is not None:
-                    content = getattr(msg, "content", None) or str(msg)
-            except Exception:
-                content = None
-
-        if not content:
-            logger.warning("Empty content from Ollama response")
-            return None
-
-        task_obj = Task.model_validate_json(content)
-        return task_obj
-
-    except Exception as e:
-        logger.exception(f"Error calling Ollama for summarization: {e}")
-        return None
-
+class InputMessage(BaseModel):
+    user_id: str  # Идентификатор пользователя или таскайди сделать?
+    text: str     # Основной текст задачи
+    recent_tags: Optional[list[str]] = None
+    recent_zones: Optional[list[str]] = None
 
 class OutputMessage(BaseModel):
     input_text: str
@@ -126,16 +65,59 @@ class OutputMessage(BaseModel):
     model: str
     timestamp: str
 
+async def generate_task_metadata(input_msg: InputMessage) -> Optional[Task]:
+    text = input_msg.text
 
-async def process_message(text: str) -> OutputMessage:
-    task = await generate_task_metadata(text)
+    context_str = ""
+    if input_msg.recent_tags or input_msg.recent_zones:
+        context_str = f"\n\nКонтекст пользователя:\n"
+        if input_msg.recent_tags:
+            context_str += f"- Недавние теги: {', '.join(input_msg.recent_tags[:5])}\n"  # Лимит 5 для краткости
+        if input_msg.recent_zones:
+            context_str += f"- Недавние зоны: {', '.join(input_msg.recent_zones)}\n"
+        context_str += "Используй это для релевантных тегов и зоны (если текст не противоречит; стремись к последовательности)."
+
+    full_prompt = f'Создай задачу из следующего текста:{context_str}\n\n{text}'
+
+    try:
+        client = AsyncClient(host=OLLAMA_HOST)
+        response = await client.chat(
+            messages=[
+                {
+                    'role': 'system',
+                    'content': SYSTEM_PROMPT.replace("{{current_date}}", datetime.now().strftime("%Y-%m-%d"))
+                },
+                {
+                    'role': 'user',
+                    'content': full_prompt
+                }
+            ],
+            model=MODEL,
+            format=Task.model_json_schema(),
+        )
+
+        if response is None or response.message.content is None:
+            logger.error("No response from Ollama")
+            return None
+
+        task_obj = Task.model_validate_json(response.message.content)
+        return task_obj
+
+    except Exception as e:
+        logger.exception(f"Error calling Ollama for summarization: {e}")
+        return None
+
+
+
+async def process_message(input_msg: InputMessage) -> OutputMessage:
+    task = await generate_task_metadata(input_msg)
 
     if task is None:
         logger.warning("Failed to generate task meta, using empty defaults")
         task = Task(name="", description="", tags=[], zone="")
 
     return OutputMessage(
-        input_text=text,
+        input_text=input_msg.text,
         task=task,
         model=MODEL,
         timestamp=datetime.now().isoformat()
@@ -178,20 +160,35 @@ async def main():
 
         async for msg in consumer:
             try:
-                text = msg.value
-                if not text or not text.strip():
+                raw = msg.value
+                if raw is None:
                     logger.warning(f"Empty message at offset {msg.offset}, skipping")
+                    continue
+
+                if isinstance(raw, str):
+                    try:
+                        payload = json.loads(raw)
+                    except Exception:
+                        logger.warning(f"Cannot parse message JSON at offset {msg.offset}, skipping")
+                        continue
+                else:
+                    payload = raw
+
+                try:
+                    input_msg = InputMessage.model_validate(payload)
+                except Exception as ve:
+                    logger.warning(f"Invalid message schema at offset {msg.offset}: {ve}")
                     continue
 
                 logger.info(
                     f"Processing message | partition={msg.partition} offset={msg.offset} "
-                    f"size={len(text)} chars"
+                    f"size={len(json.dumps(payload, ensure_ascii=False))} chars"
                 )
-                result = await process_message(text)
+
+                result = await process_message(input_msg)
 
                 await producer.send(OUTPUT_TOPIC, value=result.model_dump())
 
-                # compute size of sent payload for logging
                 sent_json = result.model_dump()
                 size = len(json.dumps(sent_json, ensure_ascii=False))
                 logger.info(
