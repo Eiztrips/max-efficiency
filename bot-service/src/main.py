@@ -16,13 +16,13 @@ class MyPayload1(CallbackPayload, prefix='mypayload1'):
     foo: str
     action: str
 
-#lass MyPayload2(CallbackPayload, prefix='mypayload2'):
-#   foo: str
-#   action: str
+class MyPayload2(CallbackPayload, prefix='mypayload2'):
+   foo: str
+   action: str
 
-#lass MyPayload3(CallbackPayload, prefix='mypayload3'):
-#   foo: str
-#   action: str
+class MyPayload3(CallbackPayload, prefix='mypayload3'):
+   foo: str
+   action: str
 
 @dp.bot_started()
 async def bot_started(event: BotStarted):
@@ -46,19 +46,19 @@ async def start(event: MessageCreated):
     builder.row(
         CallbackButton(
             text='Создать задачу',
-            payload=MyPayload1(foo='1', action='edit').pack(),
+            payload=MyPayload1(foo='create_task', action='edit').pack(),
         )
     )
     builder.row(
         CallbackButton(
             text='Управление категориями',
-            payload=MyPayload1(foo='2', action='edit').pack(),
+            payload=MyPayload2(foo='manage_category', action='edit').pack(),
         )
     )
     builder.row(
         CallbackButton(
             text='Посмотреть ближайшие задачи',
-            payload=MyPayload1(foo='3', action='edit').pack(),
+            payload=MyPayload3(foo='nearest_task', action='edit').pack(),
         )
     )
 
@@ -69,26 +69,135 @@ async def start(event: MessageCreated):
         ]
     )
 
-@dp.message_callback(MyPayload1.filter(F.foo == '1'))
+categories = ['Cat1', 'Cat2', 'Cat3'] #информация о категория должны приходить с бэка
+
+class MyCategoryPayload(CallbackPayload, prefix='category'):
+    foo: str
+    text: str
+
+@dp.message_callback(MyPayload1.filter(F.foo == 'create_task'))
 async def create_task(event: MessageCallback, payload: MyPayload1):
+    categoryButton = InlineKeyboardBuilder()
+
+    for idx, category in enumerate(categories):
+        payload_packed = MyCategoryPayload(foo=str(idx), text=category).pack()
+
+        categoryButton.row(
+            CallbackButton(
+                text=category,
+                payload=payload_packed
+            )
+        )
     await event.message.answer(
-        text = 'Опишите задачу',
-        attachments = []
+        text = 'Выберете категорию задачи',
+        attachments = [
+            categoryButton.as_markup(),
+        ]
     )
 
-@dp.message_callback(MyPayload1.filter(F.foo == '2'))
-async def open_category(event: MessageCallback, payload: MyPayload1):
+    @dp.message_callback(MyCategoryPayload.filter())
+    async def switch_category(event: MessageCallback, payload: MyCategoryPayload):
+        await event.message.answer(
+            text='Категория ' + payload.text + ' выбрана. Введите описание задачи:',
+            attachments=[]
+        )
+
+        # надо еще придумать как выключать прослушивание после получения 1 сообщения
+        @dp.message_created(F.message.body.text)
+        async def echo_task(event: MessageCreated):
+            # msg передается к ии для дальнейшей обработки
+            msg = event.message.body.text
+            await event.message.answer(F'Ваша новая задача: {msg}') #Вместо msg должна выводиться задача сгенерированная на бэке
+
+class MyPayload4(CallbackPayload, prefix='mypayload4'):
+   foo: str
+   action: str
+
+@dp.message_callback(MyPayload2.filter(F.foo == 'manage_category'))
+async def manage_category(event: MessageCallback, payload: MyPayload2):
+    categoryButton = InlineKeyboardBuilder()
+
+    categoryButton.row(
+        CallbackButton(
+            text='Создать категорию',
+            payload=MyPayload4(foo='create_category', action='edit').pack(),
+        )
+    )
+
+    for idx, category in enumerate(categories):
+        payload_packed = MyCategoryPayload(foo=str(idx), text=category).pack()
+
+        categoryButton.row(
+            CallbackButton(
+                text=category,
+                payload=payload_packed
+            )
+        )
+
     await event.message.answer(
         text = 'Ваши категории:',
-        attachments = []
+        attachments = [
+            categoryButton.as_markup()
+        ]
     )
 
-@dp.message_callback(MyPayload1.filter(F.foo == '3'))
-async def nearest_task(event: MessageCallback, payload: MyPayload1):
+    @dp.message_callback(MyPayload4.filter(F.foo == 'create_category'))
+    async def create_category(event: MessageCallback, payload: MyPayload4):
+        await event.message.answer(
+            text='Введите название категории:',
+            attachments=[]
+        )
+
+        @dp.message_created(F.message.body.text)
+        async def echo(event: MessageCreated):
+            # cat передается к ии для создания новой категории в бд
+            cat = event.message.body.text
+            await event.message.answer(F'Ваша новая категория: {cat}')
+
+    @dp.message_callback(MyCategoryPayload.filter())
+    async def switch_category(event: MessageCallback, payload: MyCategoryPayload):
+        await event.message.answer(
+            text='Категория ' + payload.text + ' выбрана. Что изменить?',
+            attachments=[]
+        )
+
+tasks = ['Task1', 'Task2', 'Task3'] #информация о ближайших задачах должны приходить с бэка
+
+class MyTaskPayload(CallbackPayload, prefix='category'):
+    foo: str
+    text: str
+
+@dp.message_callback(MyPayload3.filter(F.foo == 'nearest_task'))
+async def nearest_task(event: MessageCallback, payload: MyPayload3):
+    nearestTaskButton = InlineKeyboardBuilder()
+
+    for idx, task in enumerate(tasks):
+        payload_packed = MyCategoryPayload(foo=str(idx), text=task).pack()
+
+        nearestTaskButton.row(
+            CallbackButton(
+                text=task,
+                payload=payload_packed
+            )
+        )
+
     await event.message.answer(
         text = 'Ваши ближайшие задачи:',
-        attachments = []
+        attachments = [
+            nearestTaskButton.as_markup()
+        ]
     )
+
+    @dp.message_callback(MyTaskPayload.filter())
+    async def switch_task(event: MessageCallback, payload: MyTaskPayload):
+        await event.message.answer(
+            text='Задача ' + payload.text + ' выбрана. Вот ее содержание:',
+            attachments=[]
+        )
+        await event.message.answer(
+            text='Абоба', #тут должен выводится содержание задачи с бэка
+            attachments=[]
+        )
 
 async def main():
     await dp.start_polling(bot)
