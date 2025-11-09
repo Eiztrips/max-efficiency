@@ -71,9 +71,8 @@ class UserService:
         _positive_int_validator(max_id, "max_id пользователя")
         _not_empty_str_validator(username, "username пользователя")
 
-        async with self.session.begin():
-            existing_user_by_max_id = await self.user_repo.get_by_max_id(max_id)
-            return existing_user_by_max_id or await self.user_repo.create(max_id, username)
+        existing_user_by_max_id = await self.user_repo.get_by_max_id(max_id)
+        return existing_user_by_max_id or await self.user_repo.create(max_id, username)
 
     # --------------- UPDATE USER ----------------
 
@@ -87,8 +86,7 @@ class UserService:
         _positive_int_validator(max_id, "ID пользователя")
         _not_empty_dict_validator(data, "данные для обновления пользователя")
         _dict_keys_constant_validator(data, {"id", "max_id"})
-        async with self.session.begin():
-            return await self.user_repo.patch(max_id, data)
+        return await self.user_repo.patch(max_id, data)
 
 # Что бы не оверинженерить оставлю так. При усложнении логики - перейти на пудантек в schemas
 def _positive_int_validator(value: int, field_name: str):

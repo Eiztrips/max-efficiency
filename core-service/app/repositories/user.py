@@ -35,8 +35,11 @@ class UserRepository(BaseRepository):
         return result.scalars().all()
 
     async def get_all_tasks_by_max_id(self, max_id: int) -> Sequence[Task]:
+        user = await self.get_by_max_id(max_id)
+        if not user:
+            return []
         result = await self.session.execute(
-            select(Task).join(User).where(User.max_id == max_id)
+            select(Task).where(Task.user_id == user.id)
         )
         return result.scalars().all()
 

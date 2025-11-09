@@ -11,14 +11,17 @@ class TaskService:
 
     # --------------- GET ----------------
 
-    async def get_tasks(self, user_id: int,
-                        category_id: Optional[int] = None,
-                        tag_id: Optional[int] = None,
-                        status: Optional[str] = None,
-                        from_date: Optional[str] = None,
-                        to_date: Optional[str] = None,
-                        is_completed: Optional[bool] = None,
-                        search: Optional[str] = None) -> Sequence[Task]:
+    async def get_tasks(
+            self,
+            user_id: int,
+            category_id: Optional[int] = None,
+            tag_id: Optional[int] = None,
+            status: Optional[str] = None,
+            is_completed: Optional[bool] = None,
+            from_date: Optional[str] = None,
+            to_date: Optional[str] = None,
+            search: Optional[str] = None
+        ) -> Sequence[Task]:
         """
         Возвращает задачи пользователя с возможностью фильтрации.
         :param user_id: ID пользователя
@@ -44,7 +47,17 @@ class TaskService:
             _not_empty_str_validator(to_date, "дата конца диапазона")
         if search is not None:
             _not_empty_str_validator(search, "поисковый запрос")
-        return await self.task_repo.get_tasks(user_id, category_id, tag_id, status, from_date, to_date, is_completed, search)
+
+        return await self.task_repo.get_tasks(
+            user_id=user_id,
+            category_id=category_id,
+            tag_id=tag_id,
+            status=status,
+            is_completed=is_completed,
+            from_date=from_date,
+            to_date=to_date,
+            search=search
+        )
 
     # --------------- CREATE ----------------
 
@@ -64,8 +77,7 @@ class TaskService:
             _not_empty_str_validator(title, "название задачи")
             _not_empty_str_validator(description, "описание задачи")
             _positive_int_validator(category_id, "ID категории")
-            async with self.session.begin():
-                return await self.task_repo.create(user_id, title, description, expiration_date, is_completed, category_id)
+            return await self.task_repo.create(user_id, title, description, expiration_date, is_completed, category_id)
 
     # --------------- UPDATE ----------------
 
@@ -79,8 +91,7 @@ class TaskService:
         _positive_int_validator(id, "ID задачи")
         _not_empty_dict_validator(data, "данные для обновления задачи")
         _dict_keys_constant_validator(data, {"id", "user_id"})
-        async with self.session.begin():
-            return await self.task_repo.patch(id, data)
+        return await self.task_repo.patch(id, data)
 
     # --------------- DELETE ----------------
 
@@ -91,8 +102,7 @@ class TaskService:
         :return: True, если задача была успешно удалена, иначе False
         """
         _positive_int_validator(id, "ID задачи")
-        async with self.session.begin():
-            return await self.task_repo.delete(id)
+        return await self.task_repo.delete(id)
 
 # ВАЛИДАТОРЫ
 
