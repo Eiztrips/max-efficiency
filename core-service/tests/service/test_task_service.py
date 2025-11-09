@@ -40,10 +40,12 @@ class TestTaskService:
         assert len(tasks) == 2
         assert all(task.user_id == user.id for task in tasks)
 
-    """ фикс он зе фьючер
     @pytest.mark.asyncio
     async def test_get_tasks_with_filters(self, db_session):
-        \"""Тест получения задач с фильтрами\"""
+        """Тест получения задач с фильтрами
+        :arg category_id: фильтр по категории
+        :arg is_completed: фильтр по статусу выполнения
+        """
         user_repo = UserRepository(db_session)
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
@@ -52,16 +54,15 @@ class TestTaskService:
         category1 = await category_repo.create(name="Work", description="", user_id=user.id)
         category2 = await category_repo.create(name="Home", description="", user_id=user.id)
 
-        await service.create_task(user_id=user.id, title="Work Task", description="", expiration_date=None,
+        await service.create_task(user_id=user.id, title="Work Task", description="sdelat chtoto", expiration_date=None,
                                   is_completed=False, category_id=category1.id)
-        await service.create_task(user_id=user.id, title="Home Task", description="", expiration_date=None,
+        await service.create_task(user_id=user.id, title="Home Task", description="pypki sdelai ee", expiration_date=None,
                                   is_completed=True, category_id=category2.id)
 
         tasks = await service.get_tasks(user_id=user.id, category_id=category1.id, is_completed=False)
 
         assert len(tasks) == 1
         assert tasks[0].title == "Work Task"
-    """
 
     @pytest.mark.asyncio
     async def test_get_tasks_with_search(self, db_session):
@@ -140,17 +141,16 @@ class TestTaskService:
         with pytest.raises(ValueError, match="поисковый запрос должен быть непустой строкой"):
             await service.get_tasks(user_id=1, search="")
 
-    """ фикс он зе фьючер
     @pytest.mark.asyncio
     async def test_create_task(self, db_session):
-        \"""Тест создания задачи\"""
+        """Тест создания задачи"""
         user_repo = UserRepository(db_session)
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
         user = await user_repo.create(max_id=123456, username="test_user")
         category = await category_repo.create(name="Work", description="", user_id=user.id)
-        expiration = (datetime.now() + timedelta(days=7)).isoformat()
+        expiration = (datetime.now() + timedelta(days=7))
 
         task = await service.create_task(
             user_id=user.id,
@@ -168,7 +168,6 @@ class TestTaskService:
         assert task.user_id == user.id
         assert task.category_id == category.id
         assert task.is_completed is False
-    """
 
     @pytest.mark.asyncio
     async def test_create_task_invalid_user_id(self, db_session):
@@ -288,10 +287,9 @@ class TestTaskService:
         with pytest.raises(ValueError, match="Нельзя изменять поле: user_id"):
             await service.patch_task(task.id, {"user_id": 999})
 
-    """ фикс он зе фьючер
     @pytest.mark.asyncio
     async def test_delete_task(self, db_session):
-        \"""Тест удаления задачи\"""
+        """Тест удаления задачи"""
         user_repo = UserRepository(db_session)
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
@@ -310,7 +308,6 @@ class TestTaskService:
         result = await service.delete_task(task.id)
 
         assert result is True
-    """
 
     @pytest.mark.asyncio
     async def test_delete_task_not_found(self, db_session):
@@ -331,6 +328,3 @@ class TestTaskService:
 
         with pytest.raises(ValueError, match="ID задачи должен быть положительным целым числом"):
             await service.delete_task(-1)
-
-
-

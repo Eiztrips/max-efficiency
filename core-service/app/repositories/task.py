@@ -23,64 +23,6 @@ class TaskRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    """
-    class Task(Base):
-    __tablename__ = "tasks"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    description: Mapped[str] = mapped_column(Text, default="")
-    expiration_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
-    is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
-
-    category: Mapped["Category"] = relationship(back_populates="tasks")
-    tags: Mapped[list["Tag"]] = relationship(secondary=task_tags, back_populates="tasks")
-    """
-
-    """
-        async def get_tasks(self, user_id: int,
-                        category_id: Optional[int] = None,
-                        tag_id: Optional[int] = None,
-                        status: Optional[str] = None,
-                        from_date: Optional[str] = None,
-                        to_date: Optional[str] = None,
-                        is_completed: Optional[bool] = None,
-                        search: Optional[str] = None) -> Sequence[Task]:
-        \"""
-        Возвращает задачи пользователя с возможностью фильтрации.
-        :param user_id: ID пользователя
-        :param category_id: (опционально) ID категории
-        :param tag_id: (опционально) ID тега
-        :param status: (опционально) статус задачи
-        :param from_date: (опционально) дата начала диапазона
-        :param to_date: (опционально) дата конца диапазона
-        :param is_completed: (опционально) флаг завершенности задачи
-        :param search: (опционально) поисковый запрос по названию или описанию
-        :return: список задач, соответствующих фильтрам
-        \"""
-        _positive_int_validator(user_id, "ID пользователя")
-        if category_id is not None:
-            _positive_int_validator(category_id, "ID категории")
-        if tag_id is not None:
-            _positive_int_validator(tag_id, "ID тега")
-        if status is not None:
-            _not_empty_str_validator(status, "статус задачи")
-        if from_date is not None:
-            _not_empty_str_validator(from_date, "дата начала диапазона")
-        if to_date is not None:
-            _not_empty_str_validator(to_date, "дата конца диапазона")
-        if search is not None:
-            _not_empty_str_validator(search, "поисковый запрос")
-
-        return await self.task_repo.get_tasks(user_id, category_id, tag_id, status, from_date, to_date, is_completed, search)
-    """
-
     async def get_tasks(self, user_id: int,
                         category_id: Optional[int] = None,
                         tag_id: Optional[int] = None,
@@ -96,7 +38,7 @@ class TaskRepository(BaseRepository):
             query = query.where(Task.category_id == category_id)
 
         if tag_id is not None:
-            query = query.join(task_tags).where(task_tags.c.tag_id.eq(tag_id))
+            query = query.join(task_tags).where(task_tags.c.tag_id == tag_id)
 
         if status is not None:
             if status == "done":
