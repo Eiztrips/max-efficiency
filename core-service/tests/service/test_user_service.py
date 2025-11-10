@@ -1,4 +1,6 @@
 import pytest
+from sqlalchemy.testing.suite.test_reflection import users
+
 from app.services.user import UserService
 from app.models import Category, Task
 
@@ -7,35 +9,12 @@ class TestUserService:
     """Тесты для UserService"""
 
     @pytest.mark.asyncio
-    async def test_get_user_by_max_user_id(self, db_session):
-        """Тест получения пользователя по max_user_id"""
+    async def test_map_max_user_id_to_user_id(self, db_session):
+        """Тест маппинга max_user_id на внутренний user_id"""
         service = UserService(db_session)
-        await service.get_or_create_user(max_user_id=123456, username="test_user")
-        user = await service.get_by_max_user_id(123456)
-
-        assert user is not None
-        assert user.max_user_id == 123456
-        assert user.username == "test_user"
-
-    @pytest.mark.asyncio
-    async def test_get_user_by_max_user_id_not_found(self, db_session):
-        """Тест получения несуществующего пользователя"""
-        service = UserService(db_session)
-
-        user = await service.get_by_max_user_id(999999)
-
-        assert user is None
-
-    @pytest.mark.asyncio
-    async def test_get_user_by_max_user_id_invalid_value(self, db_session):
-        """Тест с невалидным max_user_id"""
-        service = UserService(db_session)
-
-        with pytest.raises(ValueError, match="max_user_id пользователя должен быть положительным целым числом"):
-            await service.get_by_max_user_id(-1)
-
-        with pytest.raises(ValueError, match="max_user_id пользователя должен быть положительным целым числом"):
-            await service.get_by_max_user_id(0)
+        user = await service.get_or_create_user(max_user_id=123456, username="test_user")
+        user_id = await service.map_max_user_id_to_user_id(123456)
+        assert user_id == user.id
 
     @pytest.mark.asyncio
     async def test_get_user_by_username(self, db_session):
@@ -160,7 +139,8 @@ class TestUserService:
         db_session.add(category2)
         await db_session.commit()
 
-        categories = await service.get_categories(123456)
+        user_id = await service.map_max_user_id_to_user_id(123456)
+        categories = await service.get_categories(user_id)
 
         assert len(categories) == 2
         assert all(isinstance(c, Category) for c in categories)
@@ -183,7 +163,8 @@ class TestUserService:
         db_session.add(task2)
         await db_session.commit()
 
-        tasks = await service.get_tasks(123456)
+        user_id = await service.map_max_user_id_to_user_id(123456)
+        tasks = await service.get_tasks(user_id)
 
         assert len(tasks) == 2
         assert all(isinstance(t, Task) for t in tasks)
@@ -207,7 +188,8 @@ class TestUserService:
         db_session.add(tag2)
         await db_session.commit()
 
-        tags = await service.get_tags(123456)
+        user_id = await service.map_max_user_id_to_user_id(123456)
+        tags = await service.get_tags(user_id)
 
         assert len(tags) == 2
         assert all(isinstance(t, Tag) for t in tags)

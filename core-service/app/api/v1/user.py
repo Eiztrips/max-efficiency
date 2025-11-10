@@ -36,7 +36,8 @@ async def get_user(
     """
     Получить пользователя по max_user_id
     """
-    user = await user_service.get_by_max_user_id(max_user_id)
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
+    user = await user_service.get_by_id(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -44,31 +45,34 @@ async def get_user(
         )
     return user
 
-@router.get("/user/{id}/categories", response_model=List[CategoryRead])
+@router.get("/user/{max_user_id}/categories", response_model=List[CategoryRead])
 async def get_user_categories(
-    id: int,
+    max_user_id: int,
     user_service: UserService = Depends(get_user_service)
 ):
     """Получить все категории пользователя по max_user_id"""
-    categories = await user_service.get_categories(id)
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
+    categories = await user_service.get_categories(user_id)
     return categories
 
-@router.get("/user/{id}/tags", response_model=List[TagRead])
+@router.get("/user/{max_user_id}/tags", response_model=List[TagRead])
 async def get_user_tags(
-    id: int,
+    max_user_id: int,
     user_service: UserService = Depends(get_user_service)
 ):
     """Получить все теги пользователя по max_user_id"""
-    tags = await user_service.get_tags(id)
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
+    tags = await user_service.get_tags(user_id)
     return tags
 
-@router.get("/user/{id}/tasks", response_model=List[TaskRead])
+@router.get("/user/{max_user_id}/tasks", response_model=List[TaskRead])
 async def get_user_tasks(
-    id: int,
+    max_user_id: int,
     user_service: UserService = Depends(get_user_service)
 ):
     """Получить все задачи пользователя по max_user_id"""
-    tasks = await user_service.get_tasks(id)
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
+    tasks = await user_service.get_tasks(user_id)
     return tasks
 
 # --------------- CREATE ----------------
@@ -93,7 +97,8 @@ async def update_user(
     user_service: UserService = Depends(get_user_service)
 ):
     """Обновить данные пользователя"""
-    user = await user_service.patch(max_user_id, user_data)
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
+    user = await user_service.patch(user_id, user_data)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

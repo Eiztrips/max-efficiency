@@ -6,6 +6,15 @@ from app.models import User, Category, Task, Tag
 class TestUserRepository:
 
     @pytest.mark.asyncio
+    async def test_get_id_by_max_user_id(self, db_session):
+        """Тест получения внутреннего user_id по max_user_id"""
+        repo = UserRepository(db_session)
+        user = await repo.create(max_user_id=123456, username="test_user")
+        result = await repo.get_id_by_max_user_id(123456)
+
+        assert result == user.id
+
+    @pytest.mark.asyncio
     async def test_get_by_id(self, db_session):
         """Тест получения пользователя по ID"""
         repo = UserRepository(db_session)
@@ -22,25 +31,6 @@ class TestUserRepository:
         """Тест получения несуществующего пользователя"""
         repo = UserRepository(db_session)
         result = await repo.get_by_id(999)
-
-        assert result is None
-
-    @pytest.mark.asyncio
-    async def test_get_by_max_user_id(self, db_session):
-        """Тест получения пользователя по max_user_id"""
-        repo = UserRepository(db_session)
-        await repo.create(max_user_id=123456, username="test_user")
-        result = await repo.get_by_max_user_id(123456)
-
-        assert result is not None
-        assert result.max_user_id == 123456
-        assert result.username == "test_user"
-
-    @pytest.mark.asyncio
-    async def test_get_by_max_user_id_not_found(self, db_session):
-        """Тест получения несуществующего пользователя по max_user_id"""
-        repo = UserRepository(db_session)
-        result = await repo.get_by_max_user_id(999999)
 
         assert result is None
 
@@ -124,7 +114,7 @@ class TestUserRepository:
         assert users_page1[0].id != users_page2[0].id
 
     @pytest.mark.asyncio
-    async def test_get_all_categories_by_max_user_id(self, db_session):
+    async def test_get_categories_by_user_id(self, db_session):
         """Тест получения всех категорий пользователя по max_user_id"""
         repo = UserRepository(db_session)
         user = await repo.create(max_user_id=123456, username="test_user")
@@ -133,13 +123,14 @@ class TestUserRepository:
         db_session.add(category1)
         db_session.add(category2)
         await db_session.commit()
-        categories = await repo.get_all_categories_by_max_user_id(123456)
+
+        categories = await repo.get_categories_by_user_id(user.id)
 
         assert len(categories) == 2
         assert all(isinstance(c, Category) for c in categories)
 
     @pytest.mark.asyncio
-    async def test_get_all_tasks_by_max_user_id(self, db_session):
+    async def test_get_tasks_by_user_id(self, db_session):
         """Тест получения всех задач пользователя по max_user_id"""
         repo = UserRepository(db_session)
         user = await repo.create(max_user_id=123456, username="test_user")
@@ -154,13 +145,13 @@ class TestUserRepository:
         db_session.add(task2)
         await db_session.commit()
 
-        tasks = await repo.get_all_tasks_by_max_user_id(123456)
+        tasks = await repo.get_tasks_by_user_id(user.id)
 
         assert len(tasks) == 2
         assert all(isinstance(t, Task) for t in tasks)
 
     @pytest.mark.asyncio
-    async def test_get_all_tags_by_max_user_id(self, db_session):
+    async def test_get_tags_by_user_id(self, db_session):
         """Тест получения всех тегов пользователя по max_user_id"""
         repo = UserRepository(db_session)
         user = await repo.create(max_user_id=123456, username="test_user")
@@ -176,7 +167,7 @@ class TestUserRepository:
         db_session.add(tag2)
         await db_session.commit()
 
-        tags = await repo.get_all_tags_by_max_user_id(123456)
+        tags = await repo.get_tags_by_user_id(user.id)
 
         assert len(tags) == 2
         assert all(isinstance(t, Tag) for t in tags)

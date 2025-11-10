@@ -8,6 +8,15 @@ from ..models import User, Tag, Category, Task
 
 class UserRepository(BaseRepository):
 
+    # --------------- GET ID BY MAX_ID ----------------
+
+    async def get_id_by_max_user_id(self, max_user_id: int) -> int:
+        result = await self.session.execute(
+            select(User.id).where(User.max_user_id == max_user_id)
+        )
+        user_id = result.scalar_one_or_none()
+        return user_id
+
     # --------------- GET BY ID (только в беке юзать) ----------------
 
     async def get_by_id(self, id: int) -> Optional[User]:
@@ -16,26 +25,21 @@ class UserRepository(BaseRepository):
 
     # --------------- GET BY MAX_ID ----------------
 
-    async def get_by_max_user_id(self, max_user_id: int) -> Optional[User]:
-        result = await self.session.execute(select(User)
-                                            .where(User.max_user_id == max_user_id))
-        return result.scalar_one_or_none()
-
     # следующее возможно придется переместить в tag/category/task репозитории
-    async def get_all_tags_by_max_user_id(self, max_user_id: int) -> Sequence[Tag]:
+    async def get_tags_by_user_id(self, user_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
-            select(Tag).join(Category).join(User).where(User.max_user_id == max_user_id)
+            select(Tag).join(Category).join(User).where(User.id == user_id)
         )
         return result.scalars().all()
 
-    async def get_all_categories_by_max_user_id(self, max_user_id: int) -> Sequence[Category]:
+    async def get_categories_by_user_id(self, user_id: int) -> Sequence[Category]:
         result = await self.session.execute(
-            select(Category).join(User).where(User.max_user_id == max_user_id)
+            select(Category).join(User).where(User.id == user_id)
         )
         return result.scalars().all()
 
-    async def get_all_tasks_by_max_user_id(self, max_user_id: int) -> Sequence[Task]:
-        user = await self.get_by_max_user_id(max_user_id)
+    async def get_tasks_by_user_id(self, user_id: int) -> Sequence[Task]:
+        user = await self.get_by_id(user_id)
         if not user:
             return []
         result = await self.session.execute(
