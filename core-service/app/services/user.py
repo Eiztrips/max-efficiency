@@ -2,6 +2,7 @@ from typing import Optional, Sequence
 
 from ..repositories.user import UserRepository
 from ..models import User, Tag, Category, Task
+from ..utils import *
 
 class UserService:
 
@@ -98,25 +99,3 @@ class UserService:
         _not_empty_dict_validator(data, "данные для обновления пользователя")
         _dict_keys_constant_validator(data, {"id", "max_user_id"})
         return await self.user_repo.patch(user_id, data)
-
-# Что бы не оверинженерить оставлю так. При усложнении логики - перейти на пудантек в schemas
-def _positive_int_validator(value: int, field_name: str):
-    if not isinstance(value, int) or value <= 0:
-        raise ValueError(f"{field_name} должен быть положительным целым числом.")
-
-def _not_empty_str_validator(value: str, field_name: str):
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{field_name} должен быть непустой строкой.")
-
-def _not_empty_dict_validator(value: dict, field_name: str):
-    if not isinstance(value, dict) or not value:
-        raise ValueError(f"{field_name} должен быть непустым словарем.")
-
-def _dict_keys_constant_validator(data: dict, constant_keys: set[str]):
-    for key in constant_keys:
-        if key in data:
-            raise ValueError(f"Нельзя изменять поле: {key}")
-
-def _category_exists_validator(category: Category):
-    if not category:
-        raise ValueError("Категория не найдена")
