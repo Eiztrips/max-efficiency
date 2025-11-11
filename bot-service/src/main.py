@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import maxapi
 from argparse import Action
 from typing import Any, Dict, Optional
 
+from examples.keyboard.main import payload
 from maxapi import Bot, Dispatcher, F
 from maxapi.filters import BaseFilter
 from maxapi.filters.callback_payload import CallbackPayload
@@ -129,7 +131,6 @@ WAITING_DESCRIPTION = "waiting_description"
 WAITING_CREATE_CATEGORY = "waiting_create_name"
 WAITING_EDIT_CATEGORY = "waiting_edit_category"
 
-
 class ActionButton(CallbackPayload, prefix="action"):
     foo: str
     action: str
@@ -140,11 +141,65 @@ class TextButton(CallbackPayload, prefix="text"):
     text: str
 
 
+class TagsButton(CallbackPayload, prefix="tags"):
+    foo: str
+    text: str
+
+class TaskButton(CallbackPayload, prefix="task"):
+    foo: str
+    text: str
+
+categories = [
+    "Cat1",
+    "Cat2",
+    "Cat3"
+]  # информация о категория должны приходить с бэка
+
+tasks = [
+    "Task1",
+    "Task2",
+    "Task3",
+]  # информация о ближайших задачах должны приходить с бэка
+
+tags = [
+    'Tag1',
+    'Tag2',
+    'Tag3',
+] #должны приходить с бэка
+
+builder = InlineKeyboardBuilder()
+
+builder.row(
+    CallbackButton(
+        text="Создать задачу",
+        payload=ActionButton(foo="create_task", action="edit").pack(),
+    )
+)
+builder.row(
+    CallbackButton(
+        text="Управление категориями",
+        payload=ActionButton(foo="manage_category", action="edit").pack(),
+    )
+)
+builder.row(
+    CallbackButton(
+        text="Посмотреть ближайшие задачи",
+        payload=ActionButton(foo="nearest_task", action="edit").pack(),
+    )
+)
+builder.row(
+    CallbackButton(
+        text="Поиск задач по тегам",
+        payload=ActionButton(foo="tasks_on_tags", action="edit").pack(),
+    )
+)
+
+
 @dp.bot_started()
 async def bot_started(event: BotStarted):
     await bot.send_message(
         chat_id=event.chat_id,
-        text="Привет! Я бот для повышения твоей эффективности.\n\n"
+        text=f"Привет {event.user.first_name} {event.user.last_name}! Я бот для повышения твоей эффективности.\n\n"
         "Со мной ты можешь:\n"
         "1) Создавать для себя задачи\n"
         "2) Делить задачи по категориям\n"
@@ -153,42 +208,14 @@ async def bot_started(event: BotStarted):
         "Теперь пропиши команду /start, что бы начать использование бота.",
     )
 
-
 @dp.message_created(Command("start"))
 async def start(event: MessageCreated):
-    builder = InlineKeyboardBuilder()
-
-    # Уходит запрос на бэкэнд
-
-    builder.row(
-        CallbackButton(
-            text="Создать задачу",
-            payload=ActionButton(foo="create_task", action="edit").pack(),
-        )
-    )
-    builder.row(
-        CallbackButton(
-            text="Управление категориями",
-            payload=ActionButton(foo="manage_category", action="edit").pack(),
-        )
-    )
-    builder.row(
-        CallbackButton(
-            text="Посмотреть ближайшие задачи",
-            payload=ActionButton(foo="nearest_task", action="edit").pack(),
-        )
-    )
-
     await event.message.answer(
         text="Вот мои команды:",
         attachments=[
             builder.as_markup(),
         ],
     )
-
-
-categories = ["Cat1", "Cat2", "Cat3"]  # информация о категория должны приходить с бэка
-
 
 @dp.message_callback(ActionButton.filter(F.foo == "create_task"))
 async def create_task(event: MessageCallback, payload: ActionButton):
@@ -204,12 +231,12 @@ async def create_task(event: MessageCallback, payload: ActionButton):
         categoryButton.row(CallbackButton(text=category, payload=payload_packed))
 
     await event.message.answer(
-        text="Выберете категорию задачи",
+        text="Выберете категорию задачи ",
         attachments=[
             categoryButton.as_markup(),
         ],
     )
-
+    await bot.delete_message(event.message.body.mid)
 
 @dp.message_callback(TextButton.filter())
 async def process_category_selection(event: MessageCallback, payload: TextButton):
@@ -225,16 +252,17 @@ async def process_category_selection(event: MessageCallback, payload: TextButton
             text=f"Категория {payload.text} выбрана. Введите описание задачи:",
             attachments=[],
         )
+        await bot.delete_message(event.message.body.mid)
     elif context == "manage_category":
         # Логика для manage: например, edit
         await state.update_data({"selected_category": payload.text})
         await state.set_state(WAITING_EDIT_CATEGORY)
         await event.message.answer(
-            text=f"Категория {payload.text} выбрана. Введите текст",
+            text=f"Категория {payload.text} выбрана. Введите новое название категории:",
             attachments=[],
         )
+        await bot.delete_message(event.message.body.mid)
     # Другие контексты...
-
 
 # Хендлер для текста: только в стейте WAITING_DESCRIPTION
 @dp.message_created(StateFilter(WAITING_DESCRIPTION))
@@ -250,8 +278,13 @@ async def process_task_description(event: MessageCreated):
     await event.message.answer(
         f'Ваша новая задача в категории "{category}": {msg}'
     )  # Сгенерированная с бэка
+    await event.message.answer(
+        text="Вот мои команды:",
+        attachments=[
+            builder.as_markup(),
+        ],
+    )
     await state.clear()  # Выход
-
 
 @dp.message_callback(ActionButton.filter(F.foo == "manage_category"))
 async def manage_category(event: MessageCallback, payload: ActionButton):
@@ -272,7 +305,7 @@ async def manage_category(event: MessageCallback, payload: ActionButton):
     await event.message.answer(
         text="Ваши категории:", attachments=[categoryButton.as_markup()]
     )
-
+    await bot.delete_message(event.message.body.mid)
 
 @dp.message_callback(ActionButton.filter(F.foo == "create_category"))
 async def start_create_category(event: MessageCallback, payload: ActionButton):
@@ -280,7 +313,7 @@ async def start_create_category(event: MessageCallback, payload: ActionButton):
     state = FSMContext(chat_id)
     await state.set_state(WAITING_CREATE_CATEGORY)
     await event.message.answer(text="Введите название категории:", attachments=[])
-
+    await bot.delete_message(event.message.body.mid)
 
 # Хендлер для текста: только в стейте WAITING_CREATE_CATEGORY
 @dp.message_created(StateFilter(WAITING_CREATE_CATEGORY))
@@ -291,8 +324,13 @@ async def process_category_name(event: MessageCreated):
 
     # Передача на бэк/ИИ для создания в БД
     await event.message.answer(f'Ваша новая категория "{cat}" создана!')
+    await event.message.answer(
+        text="Вот мои команды:",
+        attachments=[
+            builder.as_markup(),
+        ],
+    )
     await state.clear()
-
 
 # Для edit категории (пример обработки ввода)
 @dp.message_created(StateFilter(WAITING_EDIT_CATEGORY))
@@ -305,30 +343,78 @@ async def process_edit_category(event: MessageCreated):
     category = data.get("selected_category", "Unknown")
 
     await event.message.answer(f"Выбрана категория: {category} изменения {input_text}")
-
+    await event.message.answer(
+        text="Вот мои команды:",
+        attachments=[
+            builder.as_markup(),
+        ],
+    )
     await state.clear()
 
-
-tasks = [
-    "Task1",
-    "Task2",
-    "Task3",
-]  # информация о ближайших задачах должны приходить с бэка
-
-
-@dp.message_callback(TextButton.filter(F.foo == "nearest_task"))
-async def nearest_task(event: MessageCallback, payload: TextButton):
+@dp.message_callback(ActionButton.filter(F.foo == "nearest_task"))
+async def nearest_task(event: MessageCallback, payload: ActionButton):
     nearestTaskButton = InlineKeyboardBuilder()
     for idx, task in enumerate(tasks):
-        payload_packed = TextButton(foo=str(idx), text=task).pack()
+        payload_packed = TaskButton(foo=str(idx), text=task).pack()
         nearestTaskButton.row(CallbackButton(text=task, payload=payload_packed))
     await event.message.answer(
-        text="Ваши ближайшие задачи:", attachments=[nearestTaskButton.as_markup()]
+        text="Ваши ближайшие задачи:",
+        attachments=[nearestTaskButton.as_markup()]
     )
+    await bot.delete_message(event.message.body.mid)
 
+@dp.message_callback(ActionButton.filter(F.foo == "tasks_on_tags"))
+async def select_tag(event: MessageCallback, payload: ActionButton):
+    TagsButtonBuilder = InlineKeyboardBuilder()
 
-@dp.message_callback(TextButton.filter())
-async def switch_task(event: MessageCallback, payload: TextButton):
+    for idx, tag in enumerate(tags):
+        payload_packed = TagsButton(foo=str(idx), text=tag).pack()
+
+        TagsButtonBuilder.row(
+            CallbackButton(
+                text=tag,
+                payload=payload_packed
+            )
+        )
+    await event.message.answer(
+        text = 'Выберете интересующий тег',
+        attachments = [
+            TagsButtonBuilder.as_markup(),
+        ]
+    )
+    await bot.delete_message(event.message.body.mid)
+
+@dp.message_callback(TagsButton.filter())
+async def select_task(event: MessageCallback, payload: TagsButton):
+
+    #Обновление списка задач по тегу с бэка при каждом новом выборе тега
+    Tasksontags = [
+        'TasksOnTag1',
+        'TasksOnTag2',
+        'TasksOnTag3',
+    ]
+
+    TaskOnTagsButton = InlineKeyboardBuilder()
+
+    for idx, tasksontag in enumerate(Tasksontags):
+        payload_packed = TaskButton(foo=str(idx), text=tasksontag).pack()
+
+        TaskOnTagsButton.row(
+            CallbackButton(
+                text=tasksontag,
+                payload=payload_packed
+            )
+        )
+    await event.message.answer(
+        text='Выберете задачу',
+        attachments=[
+            TaskOnTagsButton.as_markup(),
+        ]
+    )
+    await bot.delete_message(event.message.body.mid)
+
+@dp.message_callback(TaskButton.filter())
+async def switch_task(event: MessageCallback, payload: TaskButton):
     await event.message.answer(
         text=f'Задача "{payload.text}" выбрана. Вот ее содержание:', attachments=[]
     )
@@ -336,7 +422,13 @@ async def switch_task(event: MessageCallback, payload: TextButton):
         text="Абоба: детальное описание с бэка.",  # Содержание с бэка
         attachments=[],
     )
-
+    await bot.delete_message(event.message.body.mid)
+    await event.message.answer(
+        text="Вот мои команды:",
+        attachments=[
+            builder.as_markup(),
+        ],
+    )
 
 async def main():
     await dp.start_polling(bot)
