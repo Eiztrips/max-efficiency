@@ -5,6 +5,7 @@ from app.repositories.user import UserRepository
 from app.repositories.category import CategoryRepository
 from app.repositories.tag import TagRepository
 from app.schemas import TaskCreate, UserCreate
+from app.schemas.category import CategoryCreate
 from app.schemas.task import TaskQuery, TaskUpdate
 
 
@@ -19,8 +20,8 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category1 = await category_repo.create(name="Work", description="", user_id=user.id)
-        category2 = await category_repo.create(name="Home", description="", user_id=user.id)
+        category1 = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
+        category2 = await category_repo.create(CategoryCreate(name="Home", description="", user_id=user.id))
 
         payload1 = TaskCreate(user_id=user.id, title="Work Task", description="", expiration_date=None,
                                is_completed=False, category_id=category1.id)
@@ -46,8 +47,8 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
-        tag = await tag_repo.create(name="urgent", color="red", category_id=category.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
+        tag = await tag_repo.create(name="urgent", color="#FFFFF", category_id=category.id)
 
         payload1 = TaskCreate(user_id=user.id, title="Urgent Task", description="", expiration_date=None,
                               is_completed=False, category_id=category.id)
@@ -79,7 +80,7 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
 
         payload1 = TaskCreate(user_id=user.id, title="Completed Task", description="", expiration_date=None,
                               is_completed=True, category_id=category.id)
@@ -105,7 +106,7 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
 
         date1 = datetime.now() + timedelta(days=1)
         date2 = datetime.now() + timedelta(days=5)
@@ -141,7 +142,7 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
 
         payload1 = TaskCreate(user_id=user.id, title="Important Meeting", description="Discuss project",
                               expiration_date=None, is_completed=False, category_id=category.id)
@@ -166,7 +167,7 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
         expiration = datetime.now() + timedelta(days=7)
 
         payload = TaskCreate(
@@ -196,7 +197,7 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
         payload = TaskCreate(
             user_id=user.id,
             title="Old Title",
@@ -238,7 +239,7 @@ class TestTaskRepository:
 
         payload = UserCreate(max_user_id=123456, username="test_user")
         user = await user_repo.create(payload)
-        category = await category_repo.create(name="Work", description="", user_id=user.id)
+        category = await category_repo.create(CategoryCreate(name="Work", description="", user_id=user.id))
         payload = TaskCreate(
             user_id=user.id,
             title="Task to delete",

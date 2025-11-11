@@ -116,4 +116,3 @@ async def delete_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Задача с ID={id} не найдена"
         )
-    return None

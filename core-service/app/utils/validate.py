@@ -21,3 +21,7 @@ def _dict_keys_constant_validator(data: dict, constant_keys: set[str]):
 def _category_exists_validator(category: Category):
     if not category:
         raise ValueError("Категория не найдена")
+
+def _user_exists_validator(user):
+    if not user:
+        raise ValueError("Пользователь не найден")
