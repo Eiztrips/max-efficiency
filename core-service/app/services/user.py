@@ -3,6 +3,7 @@ from fastapi import HTTPException
 
 from ..repositories.user import UserRepository
 from ..models import User, Tag, Category, Task
+from ..schemas import UserCreate
 from ..utils import *
 
 class UserService:
@@ -79,29 +80,29 @@ class UserService:
 
     # --------------- CREATE USER ----------------
 
-    async def get_or_create_user(self, max_user_id: int, username: str) -> User:
+    async def get_or_create(self, payload: UserCreate) -> User:
         """
         Создает нового пользователя.
         :param max_user_id: max_user_id пользователя
         :param username: имя пользователя
         :return: созданный объект пользователя
         """
-        _positive_int_validator(max_user_id, "max_user_id пользователя")
-        _not_empty_str_validator(username, "username пользователя")
-        user_id = await self.user_repo.get_id_by_max_user_id(max_user_id)
+        user_id = await self.user_repo.get_id_by_max_user_id(payload.max_user_id)
         existing_user_by_max_user_id = await self.user_repo.get_by_id(user_id)
-        return existing_user_by_max_user_id or await self.user_repo.create(max_user_id, username)
+        return existing_user_by_max_user_id or await self.user_repo.create(payload)
 
     # --------------- UPDATE USER ----------------
 
+    """ Пока не нада, менять нечего 
     async def patch(self, user_id: int, data: dict) -> Optional[User]:
-        """
+        \"""
         Обновляет данные пользователя.
         :param user_id: user_id пользователя
         :param data: словарь с данными для обновления
         :return: обновленный объект пользователя или None, если пользователь не найден
-        """
+        \"""
         _positive_int_validator(user_id, "ID пользователя")
         _not_empty_dict_validator(data, "данные для обновления пользователя")
         _dict_keys_constant_validator(data, {"id", "max_user_id"})
         return await self.user_repo.patch(user_id, data)
+    """

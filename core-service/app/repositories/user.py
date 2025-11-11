@@ -4,6 +4,7 @@ from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
 from ..models import User, Tag, Category, Task
+from ..schemas import UserCreate
 
 
 class UserRepository(BaseRepository):
@@ -56,9 +57,9 @@ class UserRepository(BaseRepository):
 
     # --------------- CREATE ----------------
 
-    async def create(self, max_user_id: int, username: str) -> User:
+    async def create(self, payload: UserCreate) -> User:
         user = User(
-            max_user_id=max_user_id, username=username
+            max_user_id=payload.max_user_id, username=payload.username
         )
 
         self.session.add(user)
@@ -68,6 +69,7 @@ class UserRepository(BaseRepository):
 
     # --------------- UPDATE ----------------
 
+    """ пока unuse потому что обновлять нечего
     async def patch(self, id: int, data: dict) -> Optional[User]:
         user = await self.get_by_id(id)
 
@@ -82,6 +84,7 @@ class UserRepository(BaseRepository):
         await self.session.commit()
         await self.session.refresh(user)
         return user
+    """
 
     # --------------- для DEBUG жеск ----------------
 

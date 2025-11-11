@@ -27,7 +27,7 @@ async def get_users(
     """Получить всех пользователей (DEBUG)"""
     result = await db.execute(select(models.User))
     users = result.scalars().all()
-    return users
+    return [UserRead.model_validate(user) for user in users]
 
 # --------------- GET ----------------
 
@@ -46,7 +46,7 @@ async def get_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Пользователь с max_user_id={max_user_id} не найден"
         )
-    return user
+    return UserRead.model_validate(user)
 
 @router.get("/user/{max_user_id}/categories", response_model=List[CategoryRead])
 async def get_user_categories(
@@ -56,7 +56,7 @@ async def get_user_categories(
     """Получить все категории пользователя по max_user_id"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
     categories = await user_service.get_categories(user_id)
-    return categories
+    return [CategoryRead.model_validate(category) for category in categories]
 
 @router.get("/user/{max_user_id}/tags", response_model=List[TagRead])
 async def get_user_tags(
@@ -66,7 +66,7 @@ async def get_user_tags(
     """Получить все теги пользователя по max_user_id"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
     tags = await user_service.get_tags(user_id)
-    return tags
+    return [TagRead.model_validate(tag) for tag in tags]
 
 @router.get("/user/{max_user_id}/tasks", response_model=List[TaskRead])
 async def get_user_tasks(
@@ -77,30 +77,28 @@ async def get_user_tasks(
     """Получить все задачи пользователя по max_user_id"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
     tasks = await task_service.get_tasks(user_id=user_id)
-    return tasks
+    return [TaskRead.model_validate(task) for task in tasks]
 
 # --------------- CREATE ----------------
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user(
-    user_data: UserCreate,
+    payload: UserCreate,
     user_service: UserService = Depends(get_user_service)
 ):
     """Создать или получить существующего пользователя"""
-    return await user_service.get_or_create_user(
-        max_user_id=user_data.max_user_id,
-        username=user_data.username
-    )
+    return await user_service.get_or_create_user(payload)
 
 # --------------- UPDATE ----------------
 
+""" не используется, но пусть будет
 @router.patch("/{max_user_id}", response_model=UserRead)
 async def update_user(
     max_user_id: int,
     user_data: dict,
     user_service: UserService = Depends(get_user_service)
 ):
-    """Обновить данные пользователя"""
+    \"""Обновить данные пользователя\"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
     user = await user_service.patch(user_id, user_data)
     if not user:
@@ -108,4 +106,5 @@ async def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Пользователь с max_user_id={max_user_id} не найден"
         )
-    return user
+    return UserRead.model_validate(user)
+"""

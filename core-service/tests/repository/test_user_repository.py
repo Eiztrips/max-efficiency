@@ -1,6 +1,7 @@
 import pytest
 from app.repositories.user import UserRepository
 from app.models import User, Category, Task, Tag
+from app.schemas import UserCreate
 
 
 class TestUserRepository:
@@ -9,7 +10,8 @@ class TestUserRepository:
     async def test_get_id_by_max_user_id(self, db_session):
         """Тест получения внутреннего user_id по max_user_id"""
         repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await repo.create(payload)
         result = await repo.get_id_by_max_user_id(123456)
 
         assert result == user.id
@@ -18,7 +20,8 @@ class TestUserRepository:
     async def test_get_by_id(self, db_session):
         """Тест получения пользователя по ID"""
         repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await repo.create(payload)
         result = await repo.get_by_id(user.id)
 
         assert result is not None
@@ -38,7 +41,8 @@ class TestUserRepository:
     async def test_get_by_username(self, db_session):
         """Тест получения пользователя по username"""
         repo = UserRepository(db_session)
-        await repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        await repo.create(payload)
         result = await repo.get_by_username("test_user")
 
         assert result is not None
@@ -57,7 +61,8 @@ class TestUserRepository:
     async def test_create(self, db_session):
         """Тест создания пользователя"""
         repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="new_user")
+        payload = UserCreate(max_user_id=123456, username="new_user")
+        user = await repo.create(payload)
 
         assert user.id is not None
         assert user.max_user_id == 123456
@@ -66,32 +71,15 @@ class TestUserRepository:
         assert user.updated_at is not None
 
     @pytest.mark.asyncio
-    async def test_patch(self, db_session):
-        """Тест обновления пользователя"""
-        repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="old_username")
-        updated_user = await repo.patch(user.id, {"username": "new_username"})
-
-        assert updated_user is not None
-        assert updated_user.id == user.id
-        assert updated_user.username == "new_username"
-        assert updated_user.max_user_id == 123456
-
-    @pytest.mark.asyncio
-    async def test_patch_not_found(self, db_session):
-        """Тест обновления несуществующего пользователя"""
-        repo = UserRepository(db_session)
-        result = await repo.patch(999, {"username": "new_username"})
-
-        assert result is None
-
-    @pytest.mark.asyncio
     async def test_get_all(self, db_session):
         """Тест получения всех пользователей"""
         repo = UserRepository(db_session)
-        await repo.create(max_user_id=111, username="user1")
-        await repo.create(max_user_id=222, username="user2")
-        await repo.create(max_user_id=333, username="user3")
+        payload = UserCreate(max_user_id=123456, username="user1")
+        await repo.create(payload)
+        payload = UserCreate(max_user_id=123456, username="user2")
+        await repo.create(payload)
+        payload = UserCreate(max_user_id=123456, username="user3")
+        await repo.create(payload)
         users = await repo.get_all()
 
         assert len(users) == 3
@@ -103,7 +91,8 @@ class TestUserRepository:
         repo = UserRepository(db_session)
 
         for i in range(1, 6):
-            await repo.create(max_user_id=i * 100, username=f"user{i}")
+            payload = UserCreate(max_user_id=i * 100, username=f"user{i}")
+            await repo.create(payload)
 
         users_page1 = await repo.get_all(offset_=0, limit_=2)
         assert len(users_page1) == 2
@@ -117,7 +106,8 @@ class TestUserRepository:
     async def test_get_categories_by_user_id(self, db_session):
         """Тест получения всех категорий пользователя по max_user_id"""
         repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await repo.create(payload)
         category1 = Category(name="Category 1", description="Desc 1", owner_id=user.id)
         category2 = Category(name="Category 2", description="Desc 2", owner_id=user.id)
         db_session.add(category1)
@@ -133,7 +123,8 @@ class TestUserRepository:
     async def test_get_tasks_by_user_id(self, db_session):
         """Тест получения всех задач пользователя по max_user_id"""
         repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await repo.create(payload)
         category = Category(name="Category", description="Desc", owner_id=user.id)
         db_session.add(category)
         await db_session.commit()
@@ -154,7 +145,8 @@ class TestUserRepository:
     async def test_get_tags_by_user_id(self, db_session):
         """Тест получения всех тегов пользователя по max_user_id"""
         repo = UserRepository(db_session)
-        user = await repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await repo.create(payload)
 
         category = Category(name="Category", description="Desc", owner_id=user.id)
         db_session.add(category)

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from app.services.task import TaskService
 from app.repositories.user import UserRepository
 from app.repositories.category import CategoryRepository
-from app.schemas import TaskCreate
+from app.schemas import TaskCreate, UserCreate
 from app.schemas.task import TaskQuery, TaskUpdate
 
 
@@ -17,7 +17,8 @@ class TestTaskService:
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
-        user = await user_repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await user_repo.create(payload)
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         payload1 = TaskCreate(
@@ -56,7 +57,8 @@ class TestTaskService:
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
-        user = await user_repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await user_repo.create(payload)
         category1 = await category_repo.create(name="Work", description="", user_id=user.id)
         category2 = await category_repo.create(name="Home", description="", user_id=user.id)
 
@@ -81,7 +83,8 @@ class TestTaskService:
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
-        user = await user_repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await user_repo.create(payload)
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         payload1 = TaskCreate(user_id=user.id, title="Important Meeting", description="Discuss project",
@@ -105,7 +108,8 @@ class TestTaskService:
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
-        user = await user_repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await user_repo.create(payload)
         category = await category_repo.create(name="Work", description="", user_id=user.id)
         expiration = (datetime.now() + timedelta(days=7))
 
@@ -135,7 +139,8 @@ class TestTaskService:
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
-        user = await user_repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await user_repo.create(payload)
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         payload = TaskCreate(
@@ -179,7 +184,8 @@ class TestTaskService:
         category_repo = CategoryRepository(db_session)
         service = TaskService(db_session)
 
-        user = await user_repo.create(max_user_id=123456, username="test_user")
+        payload = UserCreate(max_user_id=123456, username="test_user")
+        user = await user_repo.create(payload)
         category = await category_repo.create(name="Work", description="", user_id=user.id)
 
         payload = TaskCreate(
