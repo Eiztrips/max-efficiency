@@ -2,14 +2,15 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-class UserBase(BaseModel):
+# --------------- REQUEST -------------------
+
+class UserCreate(BaseModel):
     max_user_id: int
     username: Optional[str] = None
 
-class UserCreate(UserBase):
-    pass
+# --------------- RESPONSE -------------------
 
-class UserRead(UserBase):
+class UserRead(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime

@@ -2,15 +2,16 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-class TagBase(BaseModel):
+# --------------- REQUEST -------------------
+
+class TagCreate(BaseModel):
     category_id: int
     name: str
     color: Optional[str] = "#FFFFFF"
 
-class TagCreate(TagBase):
-    pass
+# --------------- RESPONSE -------------------
 
-class TagRead(TagBase):
+class TagRead(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime

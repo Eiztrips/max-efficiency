@@ -3,8 +3,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 
 from app.models.base import Base
 
-
-# Используем in-memory SQLite для тестов
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 

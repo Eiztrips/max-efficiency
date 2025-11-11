@@ -1,4 +1,5 @@
 from typing import Optional, Sequence
+from fastapi import HTTPException
 
 from ..repositories.user import UserRepository
 from ..models import User, Tag, Category, Task
@@ -12,14 +13,19 @@ class UserService:
 
     # --------------- MAPPING ----------------
 
-    async def map_max_user_id_to_user_id(self, max_user_id: int) -> Optional[int]:
+    async def map_max_user_id_to_user_id(self, max_user_id: int) -> int:
         """
         Возвращает внутренний user_id по max_user_id.
         :param max_user_id: max_user_id пользователя
         :return: внутренний user_id или None, если пользователь не найден
         """
         _positive_int_validator(max_user_id, "max_user_id пользователя")
-        return await self.user_repo.get_id_by_max_user_id(max_user_id)
+        user_id = await self.user_repo.get_id_by_max_user_id(max_user_id)
+        if not(self.get_by_id(user_id)): raise HTTPException(
+            status_code=404,
+            detail=f"Пользователь с max_user_id {max_user_id} не найден."
+        )
+        return user_id
 
     # --------------- GET USER ----------------
 
