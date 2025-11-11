@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ... import models
 from ...schemas import UserRead, UserCreate, CategoryRead, CategoryCreate, TagRead, TaskRead, CategoryUpdate
 from ...database import get_db
+from ...schemas.category import CategoryUsersUpdate
 from ...services import CategoryService
 
 router = APIRouter(prefix="/v1/categories", tags=["categories"])
@@ -23,7 +24,7 @@ async def get_categories(
     """Получить все категории (DEBUG)"""
     result = await db.execute(select(models.Category))
     categories = result.scalars().all()
-    return categories
+    return [CategoryRead.model_validate(category) for category in categories]
 
 # --------------- GET ----------------
 
@@ -41,7 +42,7 @@ async def get_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Категория с ID={id} не найдена"
         )
-    return category
+    return CategoryRead.model_validate(category)
 
 @router.get("/{id}/users", response_model=List[UserRead])
 async def get_category_users(
@@ -49,8 +50,8 @@ async def get_category_users(
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Получить всех пользователей категории по ID категории"""
-    users = await category_service.get_users_by_category_id(id)
-    return users
+    users = await category_service.get_joined_users(id)
+    return [UserRead.model_validate(user) for user in users]
 
 @router.get("/{id}/tags", response_model=List[TagRead])
 async def get_category_tags(
@@ -58,8 +59,8 @@ async def get_category_tags(
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Получить все теги категории по ID категории"""
-    tags = await category_service.get_tags_by_category_id(id)
-    return tags
+    tags = await category_service.get_tags(id)
+    return [TaskRead.model_validate(tag) for tag in tags]
 
 @router.get("/{id}/tasks", response_model=List[TaskRead])
 async def get_category_tasks(
@@ -67,8 +68,8 @@ async def get_category_tasks(
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Получить все задачи категории по ID категории"""
-    tasks = await category_service.get_tasks_by_category_id(id)
-    return tasks
+    tasks = await category_service.get_tasks(id)
+    return [TaskRead.model_validate(task) for task in tasks]
 
 # --------------- CREATE ----------------
 
@@ -78,34 +79,43 @@ async def create_category(
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Создать новую категорию"""
-    category = await category_service.create(
-        user_id=category_create.user_id,
-        name=category_create.name,
-        description=category_create.description
-    )
+    category = await category_service.create(category_create)
     if not category:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось создать категорию"
         )
-    return category
+    return CategoryRead.model_validate(category)
 
 # --------------- UPDATE ----------------
 
-@router.patch("/{category_id}/users/{user_id}", response_model=CategoryUpdate)
+@router.patch("/{category_id}/users/add/{user_id}", response_model=CategoryUpdate)
 async def add_user_to_category(
-    category_id: int,
-    user_id: int,
+    payload: CategoryUsersUpdate,
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Добавить пользователя в категорию"""
-    category = await category_service.add_user(category_id, user_id)
+    category = await category_service.add_user(payload)
     if not category:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось добавить пользователя в категорию"
         )
-    return category
+    return CategoryUpdate.model_validate(category)
+
+@router.patch("/{category_id}/users/remove/{user_id}", response_model=CategoryUpdate)
+async def remove_user_from_category(
+    payload: CategoryUsersUpdate,
+    category_service: CategoryService = Depends(get_category_service)
+):
+    """Удалить пользователя из категории"""
+    category = await category_service.remove_user(payload)
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Не удалось удалить пользователя из категории"
+        )
+    return CategoryUpdate.model_validate(category)
 
 # --------------- DELETE ----------------
 
@@ -121,4 +131,3 @@ async def delete_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Категория с ID={id} не найдена"
         )
-    return None

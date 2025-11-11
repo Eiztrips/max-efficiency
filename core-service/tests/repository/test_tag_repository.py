@@ -4,6 +4,8 @@ from sqlalchemy.orm import selectinload
 
 from app.repositories.tag import TagRepository
 from app.models import User, Category, Tag, Task
+from app.schemas import TagCreate
+from app.schemas.tag import TagUpdate
 
 
 class TestTagRepository:
@@ -22,7 +24,8 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "Test Tag", "#FF0000")
+        payload = TagCreate(category_id=category.id, name="Test Tag", color="#FF0000")
+        tag = await repo.create(payload)
         result = await repo.get_by_id(tag.id)
 
         assert result is not None
@@ -53,7 +56,8 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "Unique Tag")
+        payload = TagCreate(category_id=category.id, name="Unique Tag")
+        tag = await repo.create(payload)
         result = await repo.get_by_name("Unique Tag")
 
         assert result is not None
@@ -82,8 +86,10 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag1 = await repo.create(category.id, "Tag 1")
-        tag2 = await repo.create(category.id, "Tag 2")
+        payload1 = TagCreate(category_id=category.id, name="Tag 1")
+        tag1 = await repo.create(payload1)
+        payload2 = TagCreate(category_id=category.id, name="Tag 2")
+        tag2 = await repo.create(payload2)
 
         result = await repo.get_by_category_id(category.id)
 
@@ -113,7 +119,8 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "Test Tag")
+        payload = TagCreate(category_id=category.id, name="Test Tag")
+        tag = await repo.create(payload)
 
         task1 = Task(user_id=user.id, title="Task 1", category_id=category.id)
         task2 = Task(user_id=user.id, title="Task 2", category_id=category.id)
@@ -131,7 +138,7 @@ class TestTagRepository:
         db_session.add(tag_obj)
         await db_session.commit()
 
-        result = await repo.get_all_tasks_by_tag_id(tag.id)
+        result = await repo.get_tasks(tag.id)
 
         assert len(result) == 1
 
@@ -149,7 +156,8 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "New Tag", "#00FF00")
+        payload = TagCreate(category_id=category.id, name="New Tag", color="#00FF00")
+        tag = await repo.create(payload)
 
         assert tag is not None
         assert tag.name == "New Tag"
@@ -170,10 +178,11 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "New Tag")
+        payload = TagCreate(category_id=category.id, name="New Tag")
+        tag = await repo.create(payload)
 
         assert tag is not None
-        assert tag.color == "gray"
+        assert tag.color == "#FFFFFF"
 
     @pytest.mark.asyncio
     async def test_patch(self, db_session):
@@ -189,9 +198,11 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "Old Name", "#000000")
+        payload = TagCreate(category_id=category.id, name="Old Name", color="#000000")
+        tag = await repo.create(payload)
 
-        updated_tag = await repo.patch(tag.id, {"name": "New Name", "color": "#FFFFFF"})
+        update_payload = TagUpdate(id=tag.id, name="New Name", color="#FFFFFF")
+        updated_tag = await repo.patch(update_payload)
 
         assert updated_tag is not None
         assert updated_tag.id == tag.id
@@ -202,7 +213,8 @@ class TestTagRepository:
     async def test_patch_not_found(self, db_session):
         """Тест обновления несуществующего тега"""
         repo = TagRepository(db_session)
-        result = await repo.patch(999, {"name": "New Name"})
+        payload = TagUpdate(id=999, name="New Name")
+        result = await repo.patch(payload)
 
         assert result is None
 
@@ -220,7 +232,8 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag = await repo.create(category.id, "Tag to Delete")
+        payload = TagCreate(category_id=category.id, name="Tag to Delete")
+        tag = await repo.create(payload)
 
         result = await repo.delete(tag.id)
 
@@ -250,8 +263,16 @@ class TestTagRepository:
         await db_session.refresh(category)
 
         repo = TagRepository(db_session)
-        tag1 = await repo.create(category.id, "Tag 1")
-        tag2 = await repo.create(category.id, "Tag 2")
+        payload1 = TagCreate(category_id=category.id, name="Tag 1")
+        tag1 = await repo.create(payload1)
+        payload2 = TagCreate(category_id=category.id, name="Tag 2")
+        tag2 = await repo.create(payload2)
+
+        result = await repo.get_all_tags()
+
+        assert len(result) == 2
+        assert tag1 in result
+        assert tag2 in result
 
         result = await repo.get_all_tags()
 

@@ -4,6 +4,9 @@ from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
 from ..models.tag import Tag
+from ..schemas import TagCreate
+from ..schemas.tag import TagUpdate
+
 
 class TagRepository(BaseRepository):
 
@@ -19,6 +22,13 @@ class TagRepository(BaseRepository):
                                             .where(Tag.name == name))
         return result.scalar_one_or_none()
 
+    async def get_tasks(self, tag_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.id == tag_id)
+        )
+        return result.scalars().all()
+
     async def get_by_category_id(self, category_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
             select(Tag)
@@ -26,20 +36,13 @@ class TagRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_all_tasks_by_tag_id(self, tag_id: int) -> Sequence[Tag]:
-        result = await self.session.execute(
-            select(Tag)
-            .where(Tag.id == tag_id)
-        )
-        return result.scalars().all()
-
     # --------------- CREATE ----------------
 
-    async def create(self, category_id: int, name: str, color: str = "gray") -> Optional[Tag]:
+    async def create(self, payload: TagCreate) -> Optional[Tag]:
         tag = Tag(
-            category_id=category_id,
-            name=name,
-            color=color
+            category_id=payload.category_id,
+            name=payload.name,
+            color=payload.color
         )
         self.session.add(tag)
         await self.session.commit()
@@ -48,14 +51,14 @@ class TagRepository(BaseRepository):
 
     # --------------- UPDATE ----------------
 
-    async def patch(self, id: int, data: dict) -> Optional[Tag]:
-        tag = await self.get_by_id(id)
+    async def patch(self, payload: TagUpdate) -> Optional[Tag]:
+        tag = await self.get_by_id(payload.id)
 
         if not tag:
             return None
 
-        for k, v in data.items():
-            if hasattr(tag, k):
+        for k, v in payload.model_dump().items():
+            if hasattr(tag, k) and k != "id" and v is not None:
                 setattr(tag, k, v)
 
         self.session.add(tag)
@@ -75,7 +78,7 @@ class TagRepository(BaseRepository):
         await self.session.commit()
         return True
 
-    # --------------- для DEBUG жеск ----------------
+    # --------------- DEBUG ----------------
 
     async def get_all_tags(self) -> Sequence[Tag]:
         result = await self.session.execute(select(Tag))

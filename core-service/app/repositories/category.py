@@ -4,6 +4,8 @@ from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
 from ..models import Category, User, Tag, Task
+from ..schemas import CategoryCreate, CategoryUpdate
+from ..schemas.category import CategoryUsersUpdate
 
 
 class CategoryRepository(BaseRepository):
@@ -23,7 +25,7 @@ class CategoryRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_all_joined_users_in_category(self, category_id: int) -> Sequence[User]:
+    async def get_joined_users(self, category_id: int) -> Sequence[User]:
         result = await self.session.execute(
             select(User)
             .join(Category.users)
@@ -31,14 +33,14 @@ class CategoryRepository(BaseRepository):
         )
         return result.scalars().all()
 
-    async def get_all_tags_in_category(self, category_id: int) -> Sequence[Tag]:
+    async def get_tags(self, category_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
             select(Tag)
             .where(Tag.category_id == category_id)
         )
         return result.scalars().all()
 
-    async def get_all_tasks_in_category(self, category_id: int) -> Sequence[Task]:
+    async def get_tasks(self, category_id: int) -> Sequence[Task]:
         from ..models import Task
         result = await self.session.execute(
             select(Task)
@@ -48,11 +50,11 @@ class CategoryRepository(BaseRepository):
 
     # --------------- CREATE ----------------
 
-    async def create(self, user_id: int, name: str, description: str = "") -> Optional[Category]:
+    async def create(self, payload: CategoryCreate) -> Optional[Category]:
         category = Category(
-            owner_id=user_id,
-            name=name,
-            description=description
+            owner_id=payload.user_id,
+            name=payload.name,
+            description=payload.description
         )
         self.session.add(category)
         await self.session.commit()
@@ -61,30 +63,41 @@ class CategoryRepository(BaseRepository):
 
     # --------------- UPDATE ----------------
 
-    async def patch(self, id: int, data: dict) -> bool:
-        category = await self.get_by_id(id)
+    async def patch(self, payload: CategoryUpdate) -> bool:
+        category = await self.get_by_id(payload.id)
         if not category:
             return False
-        for key, value in data.items():
-            setattr(category, key, value)
+        for key, value in payload.model_dump().items():
+            if value is not None and key != "id":
+                setattr(category, key, value)
         self.session.add(category)
         await self.session.commit()
         await self.session.refresh(category)
         return True
 
-    async def add_user(self, category_id: int, user_id: int) -> bool:
-        category = await self.get_by_id(category_id)
-        if not category:
-            return False
-        user = await self.session.get(User, user_id)
-        if not user:
-            return False
-
+    async def add_user(self, payload: CategoryUsersUpdate) -> bool:
+        category = await self.get_by_id(payload.id)
+        if not category: return False
+        user = await self.session.get(User, payload.user_id)
+        if not user: return False
         category.users.append(user)
         self.session.add(category)
         await self.session.commit()
         await self.session.refresh(category)
         return True
+
+    async def remove_user(self, payload: CategoryUsersUpdate) -> bool:
+        category = await self.get_by_id(payload.id)
+        if not category: return False
+        user = await self.session.get(User, payload.user_id)
+        if not user: return False
+        if user in category.users:
+            category.users.remove(user)
+            self.session.add(category)
+            await self.session.commit()
+            await self.session.refresh(category)
+        return True
+
 
     # --------------- DELETE ----------------
 

@@ -1,6 +1,9 @@
 import pytest
+
 from app.repositories.category import CategoryRepository
 from app.models import User, Category, Task, Tag
+from app.schemas import CategoryCreate
+from app.schemas.category import CategoryUsersUpdate, CategoryUpdate
 
 
 class TestCategoryRepository:
@@ -14,7 +17,8 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category", "Test Description")
+        payload = CategoryCreate(user_id=user.id, name="Test Category", description="Test Description")
+        category = await repo.create(payload)
         result = await repo.get_by_id(category.id)
 
         assert result is not None
@@ -49,15 +53,17 @@ class TestCategoryRepository:
         await db_session.refresh(category1)
         await db_session.refresh(category2)
 
-        await repo.add_user(category1.id, user.id)
-        await repo.add_user(category2.id, user.id)
+        payload = CategoryUsersUpdate(id=category1.id, user_id=user.id)
+        await repo.add_user(payload)
+        payload = CategoryUsersUpdate(id=category2.id, user_id=user.id)
+        await repo.add_user(payload)
 
         result = await repo.get_by_user_id(user.id)
 
         assert len(result) == 2
 
     @pytest.mark.asyncio
-    async def test_get_all_joined_users_in_category(self, db_session):
+    async def test_get_joined_users(self, db_session):
         """Тест получения всех пользователей категории"""
         user1 = User(max_user_id=123456, username="user1")
         user2 = User(max_user_id=123457, username="user2")
@@ -68,17 +74,20 @@ class TestCategoryRepository:
         await db_session.refresh(user2)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user1.id, "Test Category")
+        payload = CategoryCreate(user_id=user1.id, name="Test Category", description="Test Description")
+        category = await repo.create(payload)
 
-        await repo.add_user(category.id, user1.id)
-        await repo.add_user(category.id, user2.id)
+        payload = CategoryUsersUpdate(id=category.id, user_id=user1.id)
+        await repo.add_user(payload)
+        payload = CategoryUsersUpdate(id=category.id, user_id=user2.id)
+        await repo.add_user(payload)
 
-        users = await repo.get_all_joined_users_in_category(category.id)
+        users = await repo.get_joined_users(category.id)
 
         assert len(users) == 2
 
     @pytest.mark.asyncio
-    async def test_get_all_tags_in_category(self, db_session):
+    async def test_get_tags(self, db_session):
         """Тест получения всех тегов категории"""
         user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
@@ -86,7 +95,8 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category")
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
 
         tag1 = Tag(name="Tag 1", color="red", category_id=category.id)
         tag2 = Tag(name="Tag 2", color="blue", category_id=category.id)
@@ -94,12 +104,12 @@ class TestCategoryRepository:
         db_session.add(tag2)
         await db_session.commit()
 
-        tags = await repo.get_all_tags_in_category(category.id)
+        tags = await repo.get_tags(category.id)
 
         assert len(tags) == 2
 
     @pytest.mark.asyncio
-    async def test_get_all_tasks_in_category(self, db_session):
+    async def test_get_tasks(self, db_session):
         """Тест получения всех задач категории"""
         user = User(max_user_id=123456, username="test_user")
         db_session.add(user)
@@ -107,7 +117,9 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category")
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
 
         task1 = Task(user_id=user.id, title="Task 1", category_id=category.id)
         task2 = Task(user_id=user.id, title="Task 2", category_id=category.id)
@@ -115,7 +127,7 @@ class TestCategoryRepository:
         db_session.add(task2)
         await db_session.commit()
 
-        tasks = await repo.get_all_tasks_in_category(category.id)
+        tasks = await repo.get_tasks(category.id)
 
         assert len(tasks) == 2
 
@@ -128,7 +140,8 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "New Category", "Description")
+        payload = CategoryCreate(user_id=user.id, name="New Category", description="Description")
+        category = await repo.create(payload)
 
         assert category is not None
         assert category.name == "New Category"
@@ -144,9 +157,12 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Old Name", "Old Description")
 
-        assert await repo.patch(category.id, {"name": "New Name"})
+        payload = CategoryCreate(user_id=user.id, name="Old Name", description="Old Description")
+        category = await repo.create(payload)
+
+        payload = CategoryUpdate(id=category.id, name="New Name")
+        assert await repo.patch(payload)
         updated = await repo.get_by_id(category.id)
 
         assert updated is not None
@@ -157,7 +173,8 @@ class TestCategoryRepository:
     async def test_patch_not_found(self, db_session):
         """Тест обновления несуществующей категории"""
         repo = CategoryRepository(db_session)
-        result = await repo.patch(999, {"name": "New Name"})
+        payload = CategoryUpdate(id=999, name="New Name")
+        result = await repo.patch(payload)
 
         assert not(result)
 
@@ -170,7 +187,8 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category")
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
 
         result = await repo.delete(category.id)
         assert result is True
@@ -195,9 +213,11 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category")
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
 
-        result = await repo.add_user(category.id, user.id)
+        payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        result = await repo.add_user(payload)
         assert result is True
 
     @pytest.mark.asyncio
@@ -209,8 +229,10 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category")
-        result = await repo.add_user(category.id, user.id)
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
+        payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        result = await repo.add_user(payload)
 
         assert result is True
 
@@ -223,7 +245,43 @@ class TestCategoryRepository:
         await db_session.refresh(user)
 
         repo = CategoryRepository(db_session)
-        category = await repo.create(user.id, "Test Category")
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
 
-        result = await repo.add_user(category.id, 999)
+        payload = CategoryUsersUpdate(id=category.id, user_id=999)
+        result = await repo.add_user(payload)
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_remove_user(self, db_session):
+        """Тест удаления пользователя из категории"""
+        user = User(max_user_id=123456, username="test_user")
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+
+        repo = CategoryRepository(db_session)
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
+
+        payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        await repo.add_user(payload)
+
+        result = await repo.remove_user(payload)
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_remove_user_not_found(self, db_session):
+        """Тест удаления несуществующего пользователя из категории"""
+        user = User(max_user_id=123456, username="test_user")
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+
+        repo = CategoryRepository(db_session)
+        payload = CategoryCreate(user_id=user.id, name="Test Category")
+        category = await repo.create(payload)
+
+        payload = CategoryUsersUpdate(id=category.id, user_id=999)
+        result = await repo.remove_user(payload)
         assert result is False
