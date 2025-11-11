@@ -2,6 +2,8 @@ from typing import Optional, Sequence
 
 from ..repositories import TagRepository
 from ..models import Tag, Task
+from ..schemas import TagCreate
+from ..schemas.tag import TagUpdate
 from ..utils import *
 
 class TagService:
@@ -21,42 +23,34 @@ class TagService:
         _positive_int_validator(id, "ID тега")
         return await self.tag_repo.get_by_id(id)
 
-    async def get_tasks_by_tag_id(self, tag_id: int) -> Sequence[Task]:
+    async def get_tasks(self, tag_id: int) -> Sequence[Task]:
         """
         Возвращает все задачи, связанные с тегом по его ID.
         :param tag_id: ID тега
         :return: список задач, связанных с тегом
         """
         _positive_int_validator(tag_id, "ID тега")
-        return await self.tag_repo.get_all_tasks_by_tag_id(tag_id)
+        return await self.tag_repo.get_tasks(tag_id)
 
     # --------------- CREATE ----------------
 
-    async def create(self, category_id: int, name: str, color: str = "#FFFFFF") -> Optional[Tag]:
+    async def create(self, payload: TagCreate) -> Optional[Tag]:
         """
         Создает новый тег в категории.
-        :param category_id: ID категории, к которой принадлежит тег
-        :param name: название тега
-        :param color: цвет тега в формате HEX
+        :param payload: данные для создания тега (TagCreate)
         :return: созданный тег или None, если создание не удалось
         """
-        _positive_int_validator(category_id, "ID категории")
-        _not_empty_str_validator(name, "название тега")
-        return await self.tag_repo.create(category_id, name, color)
+        return await self.tag_repo.create(payload)
 
     # --------------- UPDATE ----------------
 
-    async def patch(self, id: int, data: dict) -> Optional[Tag]:
+    async def patch(self, payload: TagUpdate) -> Optional[Tag]:
         """
         Обновляет данные тега.
-        :param id: ID тега
-        :param data: словарь с данными для обновления
+        :param payload: данные для обновления тега (TagUpdate)
         :return: обновленный объект тега или None, если тег не найден
         """
-        _positive_int_validator(id, "ID тега")
-        _not_empty_dict_validator(data, "данные для обновления тега")
-        _dict_keys_constant_validator(data, {"id", "category_id"})
-        return await self.tag_repo.patch(id, data)
+        return await self.tag_repo.patch(payload)
 
     # --------------- DELETE ----------------
 
@@ -68,7 +62,4 @@ class TagService:
         """
         _positive_int_validator(id, "ID тега")
         return await self.tag_repo.delete(id)
-
-
-# ну или хотя бы вынести в отдельный класс...
 

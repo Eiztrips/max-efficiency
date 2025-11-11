@@ -24,7 +24,7 @@ async def get_tags(
     """Получить все теги (DEBUG)"""
     result = await db.execute(select(models.Tag))
     tags = result.scalars().all()
-    return tags
+    return [TaskRead.model_validate(tag) for tag in tags]
 
 # --------------- GET ----------------
 
@@ -42,29 +42,29 @@ async def get_tag(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Тег с ID={id} не найден"
         )
-    return tag
+    return TaskRead.model_validate(tag)
 
 @router.get("/tags/{id}/tasks", response_model=List[TaskRead])
-async def get_tag_tasks(
+async def get_tasks(
     id: int,
     tag_service: TagService = Depends(get_tag_service)
 ):
     """Получить все задачи с данным тегом по ID тега"""
-    tasks = await tag_service.get_tasks_by_tag_id(id)
-    return tasks
+    tasks = await tag_service.get_tasks(id)
+    return [TaskRead.model_validate(task) for task in tasks]
 
 # --------------- CREATE ----------------
 
 @router.post("", response_model=TagRead, status_code=status.HTTP_201_CREATED)
 async def create_tag(
-    tag_create: TagCreate,
+    pyload: TagCreate,
     tag_service: TagService = Depends(get_tag_service)
 ):
     """
     Создать новый тег
     """
-    tag = await tag_service.create(tag_create.category_id, tag_create.name, tag_create.color)
-    return tag
+    tag = await tag_service.create(pyload)
+    return TaskRead.model_validate(tag)
 
 # --------------- DELETE ----------------
 
@@ -82,4 +82,3 @@ async def delete_tag(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Тег с ID={id} не найден"
         )
-    return None

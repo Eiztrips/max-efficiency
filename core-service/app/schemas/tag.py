@@ -9,6 +9,12 @@ class TagCreate(BaseModel):
     name: str
     color: Optional[str] = "#FFFFFF"
 
+class TagUpdate(BaseModel):
+    id: int
+    category_id: Optional[int] = None
+    name: Optional[str] = None
+    color: Optional[str] = None
+
 # --------------- RESPONSE -------------------
 
 class TagRead(BaseModel):
