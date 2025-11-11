@@ -4,8 +4,7 @@ from sqlalchemy import select, Sequence
 
 from .base import BaseRepository
 from ..models import Category, User, Tag, Task
-from ..schemas import CategoryCreate, CategoryUpdate
-from ..schemas.category import CategoryUsersUpdate
+from ..schemas import CategoryCreate, CategoryUpdate, CategoryUsersUpdate
 
 
 class CategoryRepository(BaseRepository):

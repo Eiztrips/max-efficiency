@@ -4,8 +4,7 @@ from fastapi import HTTPException
 
 from ..repositories import CategoryRepository
 from ..models import User, Tag, Category, Task
-from ..schemas import CategoryCreate
-from ..schemas.category import CategoryUsersUpdate
+from ..schemas import CategoryCreate, CategoryUsersUpdate
 from ..utils import *
 
 

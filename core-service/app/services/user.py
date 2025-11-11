@@ -1,7 +1,7 @@
 from typing import Optional, Sequence
 from fastapi import HTTPException
 
-from ..repositories.user import UserRepository
+from ..repositories import UserRepository
 from ..models import User, Tag, Category, Task
 from ..schemas import UserCreate
 from ..utils import *

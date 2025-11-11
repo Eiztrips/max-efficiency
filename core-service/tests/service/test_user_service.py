@@ -46,11 +46,17 @@ class TestUserService:
         """Тест с невалидным username"""
         service = UserService(db_session)
 
-        with pytest.raises(ValueError, match="username пользователя должен быть непустой строкой"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_by_username("")
 
-        with pytest.raises(ValueError, match="username пользователя должен быть непустой строкой"):
+        assert exc_info.value.status_code == 400
+        assert "username пользователя должен быть непустой строкой" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_by_username("   ")
+
+        assert exc_info.value.status_code == 400
+        assert "username пользователя должен быть непустой строкой" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_get_or_create_user_creates_new(self, db_session):

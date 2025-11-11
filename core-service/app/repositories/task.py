@@ -1,13 +1,10 @@
 from typing import Optional
-
 from sqlalchemy import select, Sequence
+from datetime import datetime
 
 from .base import BaseRepository
 from ..models import Task, task_tags
-from datetime import datetime
-
-from ..schemas import TaskCreate
-from ..schemas.task import TaskQuery, TaskUpdate, TaskRead
+from ..schemas import TaskCreate, TaskQuery, TaskUpdate
 
 
 class TaskRepository(BaseRepository):

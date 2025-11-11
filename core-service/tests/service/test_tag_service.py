@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from app.services.tag import TagService
 from app.models import User, Category, Tag, Task
 from app.schemas import TagCreate
@@ -216,11 +217,17 @@ class TestTagService:
         """Тест удаления тега с невалидным ID"""
         service = TagService(db_session)
 
-        with pytest.raises(ValueError, match="ID тега должен быть положительным целым числом"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.delete(-1)
 
-        with pytest.raises(ValueError, match="ID тега должен быть положительным целым числом"):
+        assert exc_info.value.status_code == 400
+        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.delete(0)
+
+        assert exc_info.value.status_code == 400
+        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_by_tag_id(self, db_session):
@@ -241,17 +248,22 @@ class TestTagService:
 
         result = await service.get_tasks(tag.id)
 
-        assert len(result) == 1
-        assert result[0].id == tag.id
+        assert len(result) == 0  # У нового тега нет задач
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_by_tag_id_invalid_id(self, db_session):
         """Тест получения задач с невалидным ID тега"""
         service = TagService(db_session)
 
-        with pytest.raises(ValueError, match="ID тега должен быть положительным целым числом"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_tasks(-1)
 
-        with pytest.raises(ValueError, match="ID тега должен быть положительным целым числом"):
+        assert exc_info.value.status_code == 400
+        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_tasks(0)
+
+        assert exc_info.value.status_code == 400
+        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
 

@@ -1,11 +1,11 @@
 from typing import Optional
 
 from sqlalchemy import select, Sequence
+from sqlalchemy.orm import selectinload
 
 from .base import BaseRepository
-from ..models.tag import Tag
-from ..schemas import TagCreate
-from ..schemas.tag import TagUpdate
+from ..models import Tag, Task
+from ..schemas import TagCreate, TagUpdate
 
 
 class TagRepository(BaseRepository):
@@ -22,12 +22,16 @@ class TagRepository(BaseRepository):
                                             .where(Tag.name == name))
         return result.scalar_one_or_none()
 
-    async def get_tasks(self, tag_id: int) -> Sequence[Tag]:
+    async def get_tasks(self, tag_id: int) -> Sequence[Task]:
         result = await self.session.execute(
             select(Tag)
             .where(Tag.id == tag_id)
+            .options(selectinload(Tag.tasks))
         )
-        return result.scalars().all()
+        tag = result.scalar_one_or_none()
+        if tag is None:
+            return []
+        return tag.tasks
 
     async def get_by_category_id(self, category_id: int) -> Sequence[Tag]:
         result = await self.session.execute(

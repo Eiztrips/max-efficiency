@@ -97,7 +97,7 @@ async def create_task(
     Создать новую задачу
     """
     task = await task_service.create(task_create)
-    return task
+    return TaskRead.model_validate(task)
     # TODO: Создание задачке через ИИшку
 
 # --------------- DELETE ----------------

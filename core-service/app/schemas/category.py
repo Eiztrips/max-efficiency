@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 
@@ -24,8 +24,24 @@ class CategoryUsersUpdate(BaseModel):
 
 class CategoryRead(BaseModel):
     id: int
+    name: str
+    description: Optional[str] = None
+    owner_id: int
+
+    joined_users: Optional[list[int]] = []
+    tags: Optional[list[int]] = []
+    tasks: Optional[list[int]] = []
+
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
+
+    @field_validator('joined_users', 'tags', 'tasks', mode='before')
+    @classmethod
+    def extract_ids(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [item.id if hasattr(item, 'id') else item for item in value]
+        return value

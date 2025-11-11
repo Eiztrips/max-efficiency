@@ -2,8 +2,7 @@ from typing import Optional, Sequence
 
 from ..repositories import TagRepository
 from ..models import Tag, Task
-from ..schemas import TagCreate
-from ..schemas.tag import TagUpdate
+from ..schemas import TagCreate, TagUpdate
 from ..utils import *
 
 class TagService:

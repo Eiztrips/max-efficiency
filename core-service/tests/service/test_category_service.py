@@ -78,19 +78,28 @@ class TestCategoryService:
         """Тест удаления несуществующей категории"""
         service = CategoryService(db_session)
 
-        with pytest.raises(ValueError, match="Категория не найдена"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.delete(999)
+
+        assert exc_info.value.status_code == 404
+        assert "Категория не найдена" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_delete_invalid_id(self, db_session):
         """Тест удаления категории с невалидным ID"""
         service = CategoryService(db_session)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.delete(-1)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.delete(0)
+
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_get_joined_users(self, db_session):
@@ -125,11 +134,17 @@ class TestCategoryService:
         """Тест получения пользователей с невалидным ID категории"""
         service = CategoryService(db_session)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_joined_users(-1)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_joined_users(0)
+
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_get_tags(self, db_session):
@@ -161,11 +176,17 @@ class TestCategoryService:
         """Тест получения тегов с невалидным ID категории"""
         service = CategoryService(db_session)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_tags(-1)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_tags(0)
+
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_get_tasks(self, db_session):
@@ -197,9 +218,15 @@ class TestCategoryService:
         """Тест получения задач с невалидным ID категории"""
         service = CategoryService(db_session)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_tasks(-1)
 
-        with pytest.raises(ValueError, match="ID категории должен быть положительным целым числом"):
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
             await service.get_tasks(0)
+
+        assert exc_info.value.status_code == 400
+        assert "ID категории должен быть положительным целым числом" in exc_info.value.detail
 

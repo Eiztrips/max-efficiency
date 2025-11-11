@@ -140,7 +140,9 @@ class TestTagRepository:
 
         result = await repo.get_tasks(tag.id)
 
-        assert len(result) == 1
+        assert len(result) == 2
+        assert task1 in result
+        assert task2 in result
 
     @pytest.mark.asyncio
     async def test_create(self, db_session):

@@ -1,7 +1,9 @@
-fastapi~=0.121.0
+fastapi~=0.121.1
 SQLAlchemy~=2.0.44
 pydantic~=2.12.4
-pydantic-settings~=2.11.0
-pytest~=8.4.2
-pytest-asyncio~=0.24.0
-aiosqlite
+pydantic-settings~=2.12.0
+pytest~=9.0.0
+pytest-asyncio~=1.3.0
+uvicorn
+greenlet
+asyncpg

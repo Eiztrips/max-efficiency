@@ -3,8 +3,7 @@ from typing import Optional, Sequence
 
 from ..repositories import TaskRepository
 from ..models import Task
-from ..schemas import TaskCreate
-from ..schemas.task import TaskQuery, TaskUpdate
+from ..schemas import TaskCreate, TaskQuery, TaskUpdate
 
 class TaskService:
 
