@@ -15,6 +15,9 @@ router = APIRouter(prefix="/v1/users", tags=["users"])
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(db)
 
+def get_task_service(db: AsyncSession = Depends(get_db)) -> UserService:
+    return UserService(db)
+
 # --------------- DEBUG: Получить всех пользователей ----------------
 
 @router.get("", response_model=List[UserRead])
@@ -68,11 +71,12 @@ async def get_user_tags(
 @router.get("/user/{max_user_id}/tasks", response_model=List[TaskRead])
 async def get_user_tasks(
     max_user_id: int,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    task_service: UserService = Depends(get_task_service)
 ):
     """Получить все задачи пользователя по max_user_id"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
-    tasks = await user_service.get_tasks(user_id)
+    tasks = await task_service.get_tasks(user_id=user_id)
     return tasks
 
 # --------------- CREATE ----------------

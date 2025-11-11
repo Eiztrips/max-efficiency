@@ -2,15 +2,16 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-class CategoryBase(BaseModel):
+# --------------- REQUEST -------------------
+
+class CategoryCreate(BaseModel):
     user_id: int
     name: str
     description: Optional[str] = None
 
-class CategoryCreate(CategoryBase):
-    user_id: int
+# --------------- RESPONSE -------------------
 
-class CategoryRead(CategoryBase):
+class CategoryRead(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime
