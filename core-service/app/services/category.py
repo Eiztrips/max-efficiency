@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from ..repositories import CategoryRepository
 from ..models import User, Tag, Category, Task
-from ..schemas import CategoryCreate, CategoryUsersUpdate
+from ..schemas import CategoryCreate, CategoryUsersUpdate, CategoryUsersUpdateV2
 from ..utils import *
 
 
@@ -65,7 +65,7 @@ class CategoryService:
 
     # --------------- UPDATE ----------------
 
-    async def add_user(self, payload: CategoryUsersUpdate) -> Category:
+    async def add_user(self, payload: CategoryUsersUpdateV2) -> Category:
         """
         Добавляет пользователя в категорию.
         :param payload: данные для добавления пользователя в категорию (CategoryUsersUpdate)
@@ -77,7 +77,7 @@ class CategoryService:
         category = await self.category_repo.get_by_id(payload.id)
         return category
 
-    async def remove_user(self, payload: CategoryUsersUpdate) -> Category:
+    async def remove_user(self, payload: CategoryUsersUpdateV2) -> Category:
         """
         Удаляет пользователя из категории.
         :param payload: данные для удаления пользователя из категории (CategoryUsersUpdate)

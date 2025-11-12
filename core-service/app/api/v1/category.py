@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ... import models
 from ...schemas import UserRead, UserCreate, CategoryRead, CategoryCreate, TagRead, TaskRead, CategoryUpdate
 from ...database import get_db
-from ...schemas.category import CategoryUsersUpdate
+from ...schemas.category import CategoryUsersUpdate, CategoryUsersUpdateV2
 from ...services import CategoryService
 
-router = APIRouter(prefix="/v1/categories", tags=["categories"])
+router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 def get_category_service(db: AsyncSession = Depends(get_db)) -> CategoryService:
@@ -96,12 +96,13 @@ async def create_category(
 
 # --------------- UPDATE ----------------
 
-@router.patch("/{category_id}/users/add/{user_id}", response_model=CategoryUpdate)
+@router.patch("/{category_id}/users/add/{max_user_id}", response_model=CategoryUpdate)
 async def add_user_to_category(
     payload: CategoryUsersUpdate,
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Добавить пользователя в категорию"""
+    payload = CategoryUsersUpdateV2(**{"id": payload.id, "user_id": payload.user_id})
     category = await category_service.add_user(payload)
     if not category:
         raise HTTPException(
@@ -110,12 +111,13 @@ async def add_user_to_category(
         )
     return CategoryUpdate.model_validate(category)
 
-@router.patch("/{category_id}/users/remove/{user_id}", response_model=CategoryUpdate)
+@router.patch("/{category_id}/users/remove/{max_user_id}", response_model=CategoryUpdate)
 async def remove_user_from_category(
     payload: CategoryUsersUpdate,
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Удалить пользователя из категории"""
+    payload = CategoryUsersUpdateV2(**{"id": payload.id, "user_id": payload.user_id})
     category = await category_service.remove_user(payload)
     if not category:
         raise HTTPException(

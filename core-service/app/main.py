@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from .api.v1 import user, category, tag, task
+from .api import router as api_router
 
 
 @asynccontextmanager
@@ -32,10 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user.router, prefix="/api")
-app.include_router(category.router, prefix="/api")
-app.include_router(tag.router, prefix="/api")
-app.include_router(task.router, prefix="/api")
+app.include_router(api_router.router_v1)
 
 @app.get("/")
 async def root():

@@ -10,7 +10,7 @@ from ...database import get_db
 from ...schemas.task import TaskQuery
 from ...services import TaskService, UserService
 
-router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
+router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 def get_task_service(db: AsyncSession = Depends(get_db)) -> TaskService:

@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from .base import BaseRepository
 from ..models import Category, User, Tag, Task
-from ..schemas import CategoryCreate, CategoryUpdate, CategoryUsersUpdate
+from ..schemas import CategoryCreate, CategoryUpdate, CategoryUsersUpdate, CategoryUsersUpdateV2
 
 
 class CategoryRepository(BaseRepository):
@@ -82,7 +82,7 @@ class CategoryRepository(BaseRepository):
         await self.session.refresh(category, ['users', 'tags', 'tasks'])
         return True
 
-    async def add_user(self, payload: CategoryUsersUpdate) -> bool:
+    async def add_user(self, payload: CategoryUsersUpdateV2) -> bool:
         category = await self.get_by_id(payload.id)
         if not category: return False
         user = await self.session.get(User, payload.user_id)
@@ -93,7 +93,7 @@ class CategoryRepository(BaseRepository):
         await self.session.refresh(category, ['users', 'tags', 'tasks'])
         return True
 
-    async def remove_user(self, payload: CategoryUsersUpdate) -> bool:
+    async def remove_user(self, payload: CategoryUsersUpdateV2) -> bool:
         category = await self.get_by_id(payload.id)
         if not category: return False
         user = await self.session.get(User, payload.user_id)

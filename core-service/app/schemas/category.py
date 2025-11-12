@@ -18,6 +18,10 @@ class CategoryUpdate(BaseModel):
 
 class CategoryUsersUpdate(BaseModel):
     id: int
+    max_user_id: int
+
+class CategoryUsersUpdateV2(BaseModel):
+    id: int
     user_id: int
 
 # --------------- RESPONSE -------------------

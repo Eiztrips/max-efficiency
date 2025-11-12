@@ -2,7 +2,7 @@ import pytest
 from fastapi import HTTPException
 from app.services.category import CategoryService
 from app.models import User, Category, Task, Tag
-from app.schemas.category import CategoryCreate, CategoryUsersUpdate
+from app.schemas.category import CategoryCreate, CategoryUsersUpdateV2
 
 
 class TestCategoryService:
@@ -37,7 +37,7 @@ class TestCategoryService:
         payload = CategoryCreate(user_id=user.id, name="Test Category")
         category = await service.create(payload)
 
-        add_user_payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        add_user_payload = CategoryUsersUpdateV2(id=category.id, user_id=user.id)
         result = await service.add_user(add_user_payload)
 
         assert result is not None
@@ -48,7 +48,7 @@ class TestCategoryService:
         """Тест добавления пользователя в несуществующую категорию"""
         service = CategoryService(db_session)
 
-        add_user_payload = CategoryUsersUpdate(id=999, user_id=1)
+        add_user_payload = CategoryUsersUpdateV2(id=999, user_id=1)
         with pytest.raises(HTTPException) as exc_info:
             await service.add_user(add_user_payload)
 
@@ -120,8 +120,8 @@ class TestCategoryService:
         await db_session.refresh(category)
 
         repo = CategoryRepository(db_session)
-        await repo.add_user(CategoryUsersUpdate(id=category.id, user_id=user1.id))
-        await repo.add_user(CategoryUsersUpdate(id=category.id, user_id=user2.id))
+        await repo.add_user(CategoryUsersUpdateV2(id=category.id, user_id=user1.id))
+        await repo.add_user(CategoryUsersUpdateV2(id=category.id, user_id=user2.id))
 
         service = CategoryService(db_session)
         users = await service.get_joined_users(category.id)

@@ -9,7 +9,7 @@ from ...schemas import TagRead, TaskRead, TagCreate
 from ...database import get_db
 from ...services import TagService
 
-router = APIRouter(prefix="/v1/tags", tags=["tags"])
+router = APIRouter(prefix="/tags", tags=["tags"])
 
 
 def get_tag_service(db: AsyncSession = Depends(get_db)) -> TagService:

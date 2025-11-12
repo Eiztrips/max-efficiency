@@ -9,7 +9,7 @@ from ...schemas import UserRead, UserCreate, CategoryRead, TagRead, TaskRead
 from ...database import get_db
 from ...services import UserService
 
-router = APIRouter(prefix="/v1/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:

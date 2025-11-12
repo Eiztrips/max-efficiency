@@ -3,7 +3,7 @@ import pytest
 from app.repositories.category import CategoryRepository
 from app.models import User, Category, Task, Tag
 from app.schemas import CategoryCreate
-from app.schemas.category import CategoryUsersUpdate, CategoryUpdate
+from app.schemas.category import CategoryUsersUpdateV2, CategoryUpdate
 
 
 class TestCategoryRepository:
@@ -53,9 +53,9 @@ class TestCategoryRepository:
         await db_session.refresh(category1)
         await db_session.refresh(category2)
 
-        payload = CategoryUsersUpdate(id=category1.id, user_id=user.id)
+        payload = CategoryUsersUpdateV2(id=category1.id, user_id=user.id)
         await repo.add_user(payload)
-        payload = CategoryUsersUpdate(id=category2.id, user_id=user.id)
+        payload = CategoryUsersUpdateV2(id=category2.id, user_id=user.id)
         await repo.add_user(payload)
 
         result = await repo.get_by_user_id(user.id)
@@ -77,9 +77,9 @@ class TestCategoryRepository:
         payload = CategoryCreate(user_id=user1.id, name="Test Category", description="Test Description")
         category = await repo.create(payload)
 
-        payload = CategoryUsersUpdate(id=category.id, user_id=user1.id)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=user1.id)
         await repo.add_user(payload)
-        payload = CategoryUsersUpdate(id=category.id, user_id=user2.id)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=user2.id)
         await repo.add_user(payload)
 
         users = await repo.get_joined_users(category.id)
@@ -216,7 +216,7 @@ class TestCategoryRepository:
         payload = CategoryCreate(user_id=user.id, name="Test Category")
         category = await repo.create(payload)
 
-        payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=user.id)
         result = await repo.add_user(payload)
         assert result is True
 
@@ -231,7 +231,7 @@ class TestCategoryRepository:
         repo = CategoryRepository(db_session)
         payload = CategoryCreate(user_id=user.id, name="Test Category")
         category = await repo.create(payload)
-        payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=user.id)
         result = await repo.add_user(payload)
 
         assert result is True
@@ -248,7 +248,7 @@ class TestCategoryRepository:
         payload = CategoryCreate(user_id=user.id, name="Test Category")
         category = await repo.create(payload)
 
-        payload = CategoryUsersUpdate(id=category.id, user_id=999)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=999)
         result = await repo.add_user(payload)
         assert result is False
 
@@ -264,7 +264,7 @@ class TestCategoryRepository:
         payload = CategoryCreate(user_id=user.id, name="Test Category")
         category = await repo.create(payload)
 
-        payload = CategoryUsersUpdate(id=category.id, user_id=user.id)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=user.id)
         await repo.add_user(payload)
 
         result = await repo.remove_user(payload)
@@ -282,6 +282,6 @@ class TestCategoryRepository:
         payload = CategoryCreate(user_id=user.id, name="Test Category")
         category = await repo.create(payload)
 
-        payload = CategoryUsersUpdate(id=category.id, user_id=999)
+        payload = CategoryUsersUpdateV2(id=category.id, user_id=999)
         result = await repo.remove_user(payload)
         assert result is False
