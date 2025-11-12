@@ -1,5 +1,6 @@
 from typing import Optional
 from sqlalchemy import select, Sequence
+from sqlalchemy.orm import selectinload
 
 from .base import BaseRepository
 from ..models import User, Tag, Category, Task
@@ -20,7 +21,14 @@ class UserRepository(BaseRepository):
     # --------------- GET BY ID (только в беке юзать) ----------------
 
     async def get_by_id(self, id: int) -> Optional[User]:
-        result = await self.session.execute(select(User).where(User.id == id))
+        result = await self.session.execute(
+            select(User)
+            .options(
+                selectinload(User.categories_owned),
+                selectinload(User.categories_joined)
+            )
+            .where(User.id == id)
+        )
         return result.scalar_one_or_none()
 
     # --------------- GET BY MAX_ID ----------------
@@ -50,8 +58,14 @@ class UserRepository(BaseRepository):
     # --------------- GET BY USERNAME ----------------
 
     async def get_by_username(self, username: str) -> Optional[User]:
-        result = await self.session.execute(select(User)
-                                            .where(User.username == username))
+        result = await self.session.execute(
+            select(User)
+            .options(
+                selectinload(User.categories_owned),
+                selectinload(User.categories_joined)
+            )
+            .where(User.username == username)
+        )
         return result.scalar_one_or_none()
 
     # --------------- CREATE ----------------
@@ -63,7 +77,7 @@ class UserRepository(BaseRepository):
 
         self.session.add(user)
         await self.session.commit()
-        await self.session.refresh(user)
+        await self.session.refresh(user, ['categories_owned', 'categories_joined'])
         return user
 
     # --------------- UPDATE ----------------

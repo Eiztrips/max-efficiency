@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +25,13 @@ async def get_users(
     db: AsyncSession = Depends(get_db)
 ):
     """Получить всех пользователей (DEBUG)"""
-    result = await db.execute(select(models.User))
+    from sqlalchemy.orm import selectinload
+
+    stmt = select(models.User).options(
+        selectinload(models.User.categories_owned),
+        selectinload(models.User.categories_joined),
+    )
+    result = await db.execute(stmt)
     users = result.scalars().all()
     return [UserRead.model_validate(user) for user in users]
 
@@ -83,11 +89,12 @@ async def get_user_tasks(
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user(
-    payload: UserCreate,
+    payload: UserCreate = Body(),
     user_service: UserService = Depends(get_user_service)
 ):
     """Создать или получить существующего пользователя"""
-    return await user_service.get_or_create_user(payload)
+    response = await user_service.get_or_create(payload)
+    return UserRead.model_validate(response)
 
 # --------------- UPDATE ----------------
 

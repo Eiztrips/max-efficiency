@@ -64,7 +64,10 @@ class TestUserService:
         service = UserService(db_session)
 
         payload = UserCreate(max_user_id=123456, username="new_user")
-        user = await service.get_or_create(payload)
+        await service.get_or_create(payload)
+
+        user_id = await service.map_max_user_id_to_user_id(123456)
+        user = await service.get_by_id(user_id)
 
         assert user is not None
         assert user.max_user_id == 123456

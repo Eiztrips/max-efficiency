@@ -22,7 +22,12 @@ async def get_tags(
     db: AsyncSession = Depends(get_db)
 ):
     """Получить все теги (DEBUG)"""
-    result = await db.execute(select(models.Tag))
+    from sqlalchemy.orm import selectinload
+
+    stmt = select(models.Tag).options(
+        selectinload(models.Tag.tasks),
+    )
+    result = await db.execute(stmt)
     tags = result.scalars().all()
     return [TagRead.model_validate(tag) for tag in tags]
 

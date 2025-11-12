@@ -13,7 +13,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Max",
-    description="""potom dobavlyu!""", # !
+    description="""ИИ сервис по созданию задач""",
     version="1.0.0",
     lifespan=lifespan,
     contact={

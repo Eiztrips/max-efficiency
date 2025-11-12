@@ -22,7 +22,14 @@ async def get_categories(
     db: AsyncSession = Depends(get_db)
 ):
     """Получить все категории (DEBUG)"""
-    result = await db.execute(select(models.Category))
+    from sqlalchemy.orm import selectinload
+
+    stmt = select(models.Category).options(
+        selectinload(models.Category.users),
+        selectinload(models.Category.tags),
+        selectinload(models.Category.tasks),
+    )
+    result = await db.execute(stmt)
     categories = result.scalars().all()
     return [CategoryRead.model_validate(category) for category in categories]
 

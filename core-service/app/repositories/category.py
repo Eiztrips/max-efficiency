@@ -1,6 +1,7 @@
 from typing import Optional
 
 from sqlalchemy import select, Sequence
+from sqlalchemy.orm import selectinload
 
 from .base import BaseRepository
 from ..models import Category, User, Tag, Task
@@ -12,8 +13,15 @@ class CategoryRepository(BaseRepository):
     # --------------- GET ----------------
 
     async def get_by_id(self, id: int) -> Optional[Category]:
-        result = await self.session.execute(select(Category)
-                                            .where(Category.id == id))
+        result = await self.session.execute(
+            select(Category)
+            .options(
+                selectinload(Category.users),
+                selectinload(Category.tags),
+                selectinload(Category.tasks)
+            )
+            .where(Category.id == id)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_user_id(self, user_id: int) -> Sequence[Category]:
@@ -57,7 +65,7 @@ class CategoryRepository(BaseRepository):
         )
         self.session.add(category)
         await self.session.commit()
-        await self.session.refresh(category)
+        await self.session.refresh(category, ['users', 'tags', 'tasks'])
         return category
 
     # --------------- UPDATE ----------------
@@ -71,7 +79,7 @@ class CategoryRepository(BaseRepository):
                 setattr(category, key, value)
         self.session.add(category)
         await self.session.commit()
-        await self.session.refresh(category)
+        await self.session.refresh(category, ['users', 'tags', 'tasks'])
         return True
 
     async def add_user(self, payload: CategoryUsersUpdate) -> bool:
@@ -82,7 +90,7 @@ class CategoryRepository(BaseRepository):
         category.users.append(user)
         self.session.add(category)
         await self.session.commit()
-        await self.session.refresh(category)
+        await self.session.refresh(category, ['users', 'tags', 'tasks'])
         return True
 
     async def remove_user(self, payload: CategoryUsersUpdate) -> bool:
@@ -94,7 +102,7 @@ class CategoryRepository(BaseRepository):
             category.users.remove(user)
             self.session.add(category)
             await self.session.commit()
-            await self.session.refresh(category)
+            await self.session.refresh(category, ['users', 'tags', 'tasks'])
         return True
 
 

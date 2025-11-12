@@ -13,8 +13,11 @@ class TagRepository(BaseRepository):
     # --------------- GET ----------------
 
     async def get_by_id(self, id: int) -> Optional[Tag]:
-        result = await self.session.execute(select(Tag)
-                                            .where(Tag.id == id))
+        result = await self.session.execute(
+            select(Tag)
+            .options(selectinload(Tag.tasks))
+            .where(Tag.id == id)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> Optional[Tag]:
@@ -50,7 +53,7 @@ class TagRepository(BaseRepository):
         )
         self.session.add(tag)
         await self.session.commit()
-        await self.session.refresh(tag)
+        await self.session.refresh(tag, ['tasks'])
         return tag
 
     # --------------- UPDATE ----------------
@@ -67,7 +70,7 @@ class TagRepository(BaseRepository):
 
         self.session.add(tag)
         await self.session.commit()
-        await self.session.refresh(tag)
+        await self.session.refresh(tag, ['tasks'])
         return tag
 
     # --------------- DELETE ----------------

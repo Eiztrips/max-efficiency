@@ -1,5 +1,6 @@
 from typing import Optional
 from sqlalchemy import select, Sequence
+from sqlalchemy.orm import selectinload
 from datetime import datetime
 
 from .base import BaseRepository
@@ -12,8 +13,11 @@ class TaskRepository(BaseRepository):
     # --------------- GET ----------------
 
     async def get_by_id(self, id: int) -> Optional[Task]:
-        result = await self.session.execute(select(Task)
-                                            .where(Task.id == id))
+        result = await self.session.execute(
+            select(Task)
+            .options(selectinload(Task.tags))
+            .where(Task.id == id)
+        )
         return result.scalar_one_or_none()
 
     async def get_tasks(self, payload: TaskQuery) -> Sequence[Task]:
@@ -63,7 +67,7 @@ class TaskRepository(BaseRepository):
         )
         self.session.add(new_task)
         await self.session.commit()
-        await self.session.refresh(new_task)
+        await self.session.refresh(new_task, ['tags'])
         return new_task
 
     # --------------- UPDATE ----------------
@@ -74,13 +78,13 @@ class TaskRepository(BaseRepository):
         if not task:
             return None
 
-        for field, value in payload.dict(exclude_unset=True).items():
+        for field, value in payload.model_dump(exclude_unset=True).items():
             if field != "id":
                 setattr(task, field, value)
 
         self.session.add(task)
         await self.session.commit()
-        await self.session.refresh(task)
+        await self.session.refresh(task, ['tags'])
         return task
 
     # --------------- DELETE ----------------

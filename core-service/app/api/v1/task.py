@@ -21,12 +21,18 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 # --------------- DEBUG: Получить все таски ----------------
 
-@router.get("/", response_model=List[TaskRead])
+@router.get("", response_model=List[TaskRead])
 async def get_tasks(
     db: AsyncSession = Depends(get_db)
 ):
     """Получить все таски (DEBUG)"""
-    result = await db.execute(select(models.Task))
+    from sqlalchemy.orm import selectinload
+
+    stmt = select(models.Task).options(
+        selectinload(models.Task.tags),
+        selectinload(models.Task.category),
+    )
+    result = await db.execute(stmt)
     tasks = result.scalars().all()
     return tasks
 
