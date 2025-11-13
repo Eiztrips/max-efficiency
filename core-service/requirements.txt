@@ -1,3 +1,4 @@
+redis[hiredis]
 fastapi~=0.121.1
 SQLAlchemy~=2.0.44
 pydantic~=2.12.4
@@ -8,3 +9,4 @@ aiosqlite
 uvicorn
 greenlet
 asyncpg
+aiokafka

@@ -4,16 +4,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import models
-from ...schemas import UserRead, UserCreate, CategoryRead, CategoryCreate, TagRead, TaskRead, CategoryUpdate
+from ...schemas import UserRead, CategoryRead, CategoryCreate, TagRead, TaskRead, CategoryUpdate
 from ...database import get_db
-from ...schemas.category import CategoryUsersUpdate, CategoryUsersUpdateV2
-from ...services import CategoryService
+from ...schemas.category import CategoryUsersUpdate, CategoryUsersUpdateV2, APICategoryCreate
+from ...services import CategoryService, UserService
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 def get_category_service(db: AsyncSession = Depends(get_db)) -> CategoryService:
     return CategoryService(db)
+
+def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
+    return UserService(db)
 
 # --------------- DEBUG: Получить все категории ----------------
 
@@ -82,10 +85,17 @@ async def get_category_tasks(
 
 @router.post("", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
 async def create_category(
-    category_create: CategoryCreate,
-    category_service: CategoryService = Depends(get_category_service)
+    payload: APICategoryCreate,
+    category_service: CategoryService = Depends(get_category_service),
+    user_service: UserService = Depends(get_user_service)
 ):
     """Создать новую категорию"""
+    user_id = await user_service.map_max_user_id_to_user_id(payload.max_user_id)
+    category_create = CategoryCreate(
+        user_id=user_id,
+        name=payload.name.lower(),
+        description=payload.description
+    )
     category = await category_service.create(category_create)
     if not category:
         raise HTTPException(
@@ -96,20 +106,22 @@ async def create_category(
 
 # --------------- UPDATE ----------------
 
-@router.patch("/{category_id}/users/add/{max_user_id}", response_model=CategoryUpdate)
+@router.patch("/users", response_model=CategoryRead)
 async def add_user_to_category(
     payload: CategoryUsersUpdate,
-    category_service: CategoryService = Depends(get_category_service)
+    category_service: CategoryService = Depends(get_category_service),
+    user_service: UserService = Depends(get_user_service)
 ):
     """Добавить пользователя в категорию"""
-    payload = CategoryUsersUpdateV2(**{"id": payload.id, "user_id": payload.user_id})
+    user_id = await user_service.map_max_user_id_to_user_id(payload.max_user_id)
+    payload = CategoryUsersUpdateV2(**{"id": payload.id, "user_id": user_id})
     category = await category_service.add_user(payload)
     if not category:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось добавить пользователя в категорию"
         )
-    return CategoryUpdate.model_validate(category)
+    return CategoryRead.model_validate(category)
 
 @router.patch("/{category_id}/users/remove/{max_user_id}", response_model=CategoryUpdate)
 async def remove_user_from_category(

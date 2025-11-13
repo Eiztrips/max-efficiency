@@ -5,6 +5,11 @@ from typing import Optional
 
 # --------------- REQUEST -------------------
 
+class APICategoryCreate(BaseModel):
+    max_user_id: int
+    name: str
+    description: Optional[str] = None
+
 class CategoryCreate(BaseModel):
     user_id: int
     name: str

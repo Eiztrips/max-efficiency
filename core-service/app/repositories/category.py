@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from .base import BaseRepository
 from ..models import Category, User, Tag, Task
-from ..schemas import CategoryCreate, CategoryUpdate, CategoryUsersUpdate, CategoryUsersUpdateV2
+from ..schemas import CategoryCreate, CategoryUpdate, CategoryUsersUpdateV2
 
 
 class CategoryRepository(BaseRepository):
@@ -27,8 +27,7 @@ class CategoryRepository(BaseRepository):
     async def get_by_user_id(self, user_id: int) -> Sequence[Category]:
         result = await self.session.execute(
             select(Category)
-            .join(Category.users)
-            .where(User.id == user_id)
+            .where(Category.owner_id == user_id)
         )
         return result.scalars().all()
 
@@ -54,6 +53,15 @@ class CategoryRepository(BaseRepository):
             .where(Task.category_id == category_id)
         )
         return result.scalars().all()
+
+    async def get_id_by_name_and_owner(self, name: str, owner_id: int) -> Optional[int]:
+        result = await self.session.execute(
+            select(Category.id)
+            .where(Category.name == name)
+            .where(Category.owner_id == owner_id)
+        )
+        category_id = result.scalar_one_or_none()
+        return category_id
 
     # --------------- CREATE ----------------
 

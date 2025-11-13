@@ -1,15 +1,55 @@
+import uuid
 from fastapi import HTTPException
 from typing import Optional, Sequence
 
-from ..repositories import TaskRepository
+from . import UserService
+from .redis.redis import RedisTaskService
+from ..repositories import TaskRepository, TagRepository, CategoryRepository
 from ..models import Task
 from ..schemas import TaskCreate, TaskQuery, TaskUpdate
+from ..schemas.ai import InputMessage, APIInputRequest, RedisTaskMessage
+from .kafka import kafka_producer
+
 
 class TaskService:
 
     def __init__(self, session):
         self.session = session
         self.task_repo = TaskRepository(session)
+        self.tag_repo = TagRepository(session)
+        self.category_repo = CategoryRepository(session)
+        self.user_service = UserService(session)
+
+
+    # --------------- AI ----------------
+
+    async def generate_task(self, payload: APIInputRequest) -> None:
+        """
+        Генерирует задачу на основе входного сообщения с использованием AI.
+        :param payload: входное сообщение в формате InputMessage
+        :return: сгенерированная задача
+        """
+        user_id = await self.user_service.map_max_user_id_to_user_id(payload.max_user_id)
+        task_id = str(uuid.uuid4())
+        all_tag_entities = await self.tag_repo.get_by_user_id(user_id)
+        all_category_entities = await self.category_repo.get_by_user_id(user_id)
+
+        message = InputMessage(
+            task_id=task_id,
+            prompt=payload.prompt,
+            tags=[tag.name for tag in all_tag_entities],
+            categories=[category.name for category in all_category_entities]
+        )
+
+        redis_data = RedisTaskMessage(
+            task_id=task_id,
+            user_id=user_id,
+            category_id=payload.category_id
+        )
+
+        await RedisTaskService.save_task(task_id, redis_data)
+
+        await kafka_producer.send_task_request(message)
 
     # --------------- GET ----------------
 

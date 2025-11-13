@@ -31,6 +31,33 @@ services:
     networks:
       - max-efficiency-net
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - max-efficiency-net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: max_efficiency_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: max_efficiency_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d max_efficiency_db || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - max-efficiency-net
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -85,8 +112,8 @@ services:
       - ./ai-service/config.yaml:/app/config.yaml:ro
     environment:
       KAFKA_BOOTSTRAP: kafka:9092
-      KAFKA_INPUT_TOPIC: ai-service
-      KAFKA_OUTPUT_TOPIC: main-service
+      KAFKA_INPUT_TOPIC: task.ai.request
+      KAFKA_OUTPUT_TOPIC: task.ai.response
       KAFKA_GROUP_ID: max-efficiency
       SUMMARIZER_MODEL: qwen3:1.7b
       LOG_LEVEL: INFO
@@ -100,6 +127,7 @@ services:
 volumes:
   ollama-data:
   kafka_data:
+  postgres_data: 
 
 networks:
   max-efficiency-net:

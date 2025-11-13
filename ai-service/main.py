@@ -20,8 +20,8 @@ from pydantic import BaseModel, Field
 
 # Конфигурация env задается композом
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092")
-INPUT_TOPIC = os.getenv("KAFKA_INPUT_TOPIC", "ai-service")
-OUTPUT_TOPIC = os.getenv("KAFKA_OUTPUT_TOPIC", "main-service")
+INPUT_TOPIC = os.getenv("KAFKA_INPUT_TOPIC", "task.ai.request")
+OUTPUT_TOPIC = os.getenv("KAFKA_OUTPUT_TOPIC", "task.ai.response")
 GROUP_ID = os.getenv("KAFKA_GROUP_ID", "max-efficiency")
 MODEL = os.getenv("SUMMARIZER_MODEL", "qwen3:1.7b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
@@ -44,7 +44,7 @@ SYSTEM_PROMPT = CONFIG.get("PREPROMT", "")
 
 
 class Task(BaseModel):
-    title: str # name
+    title: str
     description: str
     tags: list[str]
     expiration_date: Optional[str] = None
@@ -57,6 +57,7 @@ class InputMessage(BaseModel):
     categories: Optional[list[str]] = None
 
 class OutputMessage(BaseModel):
+    task_id: str
     prompt: str
     task: Task
     model: str
@@ -113,12 +114,15 @@ async def process_message(input_msg: InputMessage) -> OutputMessage:
         logger.warning("Failed to generate task meta, using empty defaults")
         task = Task(title="", description="", tags=[], category="")
 
-    return OutputMessage(
+    message = OutputMessage(
+        task_id=input_msg.task_id,
         prompt=input_msg.prompt,
         task=task,
         model=MODEL,
         timestamp=datetime.now().isoformat()
     )
+    logger.info(f"Сгенерирована задача для {message.task_id}")
+    return message
 
 
 async def create_consumer() -> AIOKafkaConsumer:

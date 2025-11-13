@@ -12,8 +12,8 @@ logging.basicConfig(
 logger = logging.getLogger("test_taskai")
 
 KAFKA_BOOTSTRAP = "localhost:9094"
-INPUT_TOPIC = "ai-service"
-OUTPUT_TOPIC = "main-service"
+INPUT_TOPIC = "task.ai.request"
+OUTPUT_TOPIC = "task.ai.response"
 
 # Тестовые данные
 TEST_MESSAGES = [

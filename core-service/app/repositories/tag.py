@@ -4,7 +4,7 @@ from sqlalchemy import select, Sequence
 from sqlalchemy.orm import selectinload
 
 from .base import BaseRepository
-from ..models import Tag, Task
+from ..models import Tag, Task, Category
 from ..schemas import TagCreate, TagUpdate
 
 
@@ -40,6 +40,14 @@ class TagRepository(BaseRepository):
         result = await self.session.execute(
             select(Tag)
             .where(Tag.category_id == category_id)
+        )
+        return result.scalars().all()
+
+    async def get_by_user_id(self, user_id: int) -> Sequence[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .join(Tag.category)
+            .where(Category.owner_id == user_id)
         )
         return result.scalars().all()
 

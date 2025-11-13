@@ -6,9 +6,13 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
 
-    #KAFKA_BOOTSTRAP_SERVERS: str
-    #KAFKA_ROUTE_TOPIC: str
-    #KAFKA_AI_RESPONSE_TOPIC: str
+    KAFKA_BOOTSTRAP_SERVERS: str
+    KAFKA_AI_REQUEST_TOPIC: str
+    KAFKA_AI_RESPONSE_TOPIC: str
+    KAFKA_CONSUMER_GROUP: str
+
+    REDIS_URL: str
+    REDIS_CACHE_TTL: int
 
     #SECRET_KEY: str
 

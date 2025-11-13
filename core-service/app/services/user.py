@@ -22,7 +22,7 @@ class UserService:
         """
         _positive_int_validator(max_user_id, "max_user_id пользователя")
         user_id = await self.user_repo.get_id_by_max_user_id(max_user_id)
-        if not(self.get_by_id(user_id)): raise HTTPException(
+        if not(await self.get_by_id(user_id)): raise HTTPException(
             status_code=404,
             detail=f"Пользователь с max_user_id {max_user_id} не найден."
         )

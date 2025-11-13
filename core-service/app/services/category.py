@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from ..repositories import CategoryRepository
 from ..models import User, Tag, Category, Task
-from ..schemas import CategoryCreate, CategoryUsersUpdate, CategoryUsersUpdateV2
+from ..schemas import CategoryCreate, CategoryUsersUpdateV2
 from ..utils import *
 
 
@@ -52,6 +52,8 @@ class CategoryService:
         """
         _positive_int_validator(category_id, "ID категории")
         return await self.category_repo.get_tasks(category_id)
+
+    get_id_by_name_and_owner = CategoryRepository.get_id_by_name_and_owner
 
     # --------------- CREATE ----------------
 
