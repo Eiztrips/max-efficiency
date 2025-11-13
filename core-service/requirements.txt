@@ -10,3 +10,4 @@ uvicorn
 greenlet
 asyncpg
 aiokafka
+httpx
