@@ -49,59 +49,6 @@ export const useWebAppTheme = () => {
   };
 };
 
-export const useWebAppViewport = () => {
-  const [viewport, setViewport] = useState({
-    height: window.innerHeight,
-    stableHeight: window.innerHeight,
-    isExpanded: false,
-  });
-
-  useEffect(() => {
-    const updateViewport = () => {
-      setViewport({
-        height: webAppService.getViewportHeight(),
-        stableHeight: webAppService.getViewportStableHeight(),
-        isExpanded: webAppService.isExpanded(),
-      });
-    };
-
-    webAppService.init()
-      .then(() => {
-        updateViewport();
-        
-        const webApp = webAppService.getInstance();
-        if (webApp?.onEvent) {
-          webApp.onEvent('viewportChanged', updateViewport);
-        }
-      })
-      .catch(console.error);
-
-    window.addEventListener('resize', updateViewport);
-
-    return () => {
-      window.removeEventListener('resize', updateViewport);
-      const webApp = webAppService.getInstance();
-      if (webApp?.offEvent) {
-        webApp.offEvent('viewportChanged', updateViewport);
-      }
-    };
-  }, []);
-
-  const expand = useCallback(() => {
-    webAppService.expand();
-  }, []);
-
-  const close = useCallback(() => {
-    webAppService.close();
-  }, []);
-
-  return {
-    ...viewport,
-    expand,
-    close,
-  };
-};
-
 export const useBackButton = (onClick, options = {}) => {
   const { visible = true } = options;
 

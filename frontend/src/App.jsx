@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Panel, Flex, Spinner } from "@maxhub/max-ui";
 import "@maxhub/max-ui/dist/styles.css";
-import { useWebApp, useWebAppViewport } from "./hooks/useWebApp";
+import { useWebApp } from "./hooks/useWebApp";
 import BottomNav from "./components/BottomNav";
 import TasksPage from "./pages/TasksPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -10,12 +10,7 @@ import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
   const { isReady } = useWebApp();
-  const { expand } = useWebAppViewport();
   const [activeTab, setActiveTab] = useState("tasks");
-
-  useEffect(() => {
-    expand();
-  }, [expand]);
 
   if (!isReady) {
     return (

@@ -10,6 +10,8 @@ import {
   Textarea,
 } from "@maxhub/max-ui";
 
+import { useBackButton } from "../hooks/useWebApp";
+
 const TaskDetailPage = ({ task, onClose, onSave, onDelete }) => {
   const [isEditing, setIsEditing] = useState(!task);
   const [title, setTitle] = useState(task?.title || "");
