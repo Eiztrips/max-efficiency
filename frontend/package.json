@@ -12,6 +12,7 @@
   "dependencies": {
     "@maxhub/max-ui": "^0.1.12",
     "react": "^19.2.0",
+    "react-calendar": "^6.0.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
