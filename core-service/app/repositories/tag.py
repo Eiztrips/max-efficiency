@@ -21,8 +21,11 @@ class TagRepository(BaseRepository):
         return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> Optional[Tag]:
-        result = await self.session.execute(select(Tag)
-                                            .where(Tag.name == name))
+        result = await self.session.execute(
+            select(Tag)
+            .options(selectinload(Tag.tasks))
+            .where(Tag.name == name)
+        )
         return result.scalar_one_or_none()
 
     async def get_tasks(self, tag_id: int) -> Sequence[Task]:
@@ -39,6 +42,7 @@ class TagRepository(BaseRepository):
     async def get_by_category_id(self, category_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
             select(Tag)
+            .options(selectinload(Tag.tasks))
             .where(Tag.category_id == category_id)
         )
         return result.scalars().all()
@@ -46,6 +50,7 @@ class TagRepository(BaseRepository):
     async def get_by_user_id(self, user_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
             select(Tag)
+            .options(selectinload(Tag.tasks))
             .join(Tag.category)
             .where(Category.owner_id == user_id)
         )
@@ -96,5 +101,8 @@ class TagRepository(BaseRepository):
     # --------------- DEBUG ----------------
 
     async def get_all_tags(self) -> Sequence[Tag]:
-        result = await self.session.execute(select(Tag))
+        result = await self.session.execute(
+            select(Tag)
+            .options(selectinload(Tag.tasks))
+        )
         return result.scalars().all()

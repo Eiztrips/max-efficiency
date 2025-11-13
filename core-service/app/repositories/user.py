@@ -36,13 +36,24 @@ class UserRepository(BaseRepository):
     # следующее возможно придется переместить в tag/category/task репозитории
     async def get_tags_by_user_id(self, user_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
-            select(Tag).join(Category).join(User).where(User.id == user_id)
+            select(Tag)
+            .options(selectinload(Tag.tasks))
+            .join(Category)
+            .join(User)
+            .where(User.id == user_id)
         )
         return result.scalars().all()
 
     async def get_categories_by_user_id(self, user_id: int) -> Sequence[Category]:
         result = await self.session.execute(
-            select(Category).join(User).where(User.id == user_id)
+            select(Category)
+            .options(
+                selectinload(Category.users),
+                selectinload(Category.tags),
+                selectinload(Category.tasks)
+            )
+            .join(User)
+            .where(User.id == user_id)
         )
         return result.scalars().all()
 
@@ -51,7 +62,9 @@ class UserRepository(BaseRepository):
         if not user:
             return []
         result = await self.session.execute(
-            select(Task).where(Task.user_id == user.id)
+            select(Task)
+            .options(selectinload(Task.tags))
+            .where(Task.user_id == user.id)
         )
         return result.scalars().all()
 
@@ -102,5 +115,13 @@ class UserRepository(BaseRepository):
     # --------------- для DEBUG жеск ----------------
 
     async def get_all(self, offset_: int = 0, limit_: int = 100) -> Sequence[User]:
-        result = await self.session.execute(select(User).offset(offset_).limit(limit_))
+        result = await self.session.execute(
+            select(User)
+            .options(
+                selectinload(User.categories_owned),
+                selectinload(User.categories_joined)
+            )
+            .offset(offset_)
+            .limit(limit_)
+        )
         return result.scalars().all()

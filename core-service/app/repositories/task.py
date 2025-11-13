@@ -22,7 +22,7 @@ class TaskRepository(BaseRepository):
 
     async def get_tasks(self, payload: TaskQuery) -> Sequence[Task]:
 
-        query = select(Task).where(Task.user_id == payload.user_id)
+        query = select(Task).options(selectinload(Task.tags)).where(Task.user_id == payload.user_id)
 
         if payload.category_id is not None:
             query = query.where(Task.category_id == payload.category_id)
@@ -102,5 +102,8 @@ class TaskRepository(BaseRepository):
     # --------------- для DEBUG жеск ----------------
 
     async def get_all_task(self) -> Sequence[Task]:
-        result = await self.session.execute(select(Task))
+        result = await self.session.execute(
+            select(Task)
+            .options(selectinload(Task.tags))
+        )
         return result.scalars().all()

@@ -27,6 +27,11 @@ class CategoryRepository(BaseRepository):
     async def get_by_user_id(self, user_id: int) -> Sequence[Category]:
         result = await self.session.execute(
             select(Category)
+            .options(
+                selectinload(Category.users),
+                selectinload(Category.tags),
+                selectinload(Category.tasks)
+            )
             .where(Category.owner_id == user_id)
         )
         return result.scalars().all()
@@ -34,6 +39,10 @@ class CategoryRepository(BaseRepository):
     async def get_joined_users(self, category_id: int) -> Sequence[User]:
         result = await self.session.execute(
             select(User)
+            .options(
+                selectinload(User.categories_owned),
+                selectinload(User.categories_joined)
+            )
             .join(Category.users)
             .where(Category.id == category_id)
         )
@@ -42,6 +51,7 @@ class CategoryRepository(BaseRepository):
     async def get_tags(self, category_id: int) -> Sequence[Tag]:
         result = await self.session.execute(
             select(Tag)
+            .options(selectinload(Tag.tasks))
             .where(Tag.category_id == category_id)
         )
         return result.scalars().all()
@@ -50,6 +60,7 @@ class CategoryRepository(BaseRepository):
         from ..models import Task
         result = await self.session.execute(
             select(Task)
+            .options(selectinload(Task.tags))
             .where(Task.category_id == category_id)
         )
         return result.scalars().all()
@@ -127,5 +138,14 @@ class CategoryRepository(BaseRepository):
     # --------------- для DEBUG жеск ----------------
 
     async def get_all_categories(self, offset_: int = 0, limit_: int = 100) -> Sequence[Category]:
-        result = await self.session.execute(select(Category).offset(offset_).limit(limit_))
+        result = await self.session.execute(
+            select(Category)
+            .options(
+                selectinload(Category.users),
+                selectinload(Category.tags),
+                selectinload(Category.tasks)
+            )
+            .offset(offset_)
+            .limit(limit_)
+        )
         return result.scalars().all()
