@@ -44,37 +44,34 @@ SYSTEM_PROMPT = CONFIG.get("PREPROMT", "")
 
 
 class Task(BaseModel):
-    name: str
+    title: str # name
     description: str
     tags: list[str]
-    # Опционально указывается дата до которой задачу нужно сделать
-    # перед отправлением в кафку пропарсить в datetime
     expiration_date: Optional[str] = None
-    # Возможная зона к которой эта таска относится?
-    zone: str
+    category: str
 
 class InputMessage(BaseModel):
-    user_id: str  # Идентификатор пользователя или таскайди сделать?
-    text: str     # Основной текст задачи
-    recent_tags: Optional[list[str]] = None
-    recent_zones: Optional[list[str]] = None
+    task_id: str
+    prompt: str
+    tags: Optional[list[str]] = None
+    categories: Optional[list[str]] = None
 
 class OutputMessage(BaseModel):
-    input_text: str
+    prompt: str
     task: Task
     model: str
     timestamp: str
 
 async def generate_task_metadata(input_msg: InputMessage) -> Optional[Task]:
-    text = input_msg.text
+    text = input_msg.prompt
 
     context_str = ""
-    if input_msg.recent_tags or input_msg.recent_zones:
+    if input_msg.tags or input_msg.categories:
         context_str = f"\n\nКонтекст пользователя:\n"
-        if input_msg.recent_tags:
-            context_str += f"- Недавние теги: {', '.join(input_msg.recent_tags[:5])}\n"  # Лимит 5 для краткости
-        if input_msg.recent_zones:
-            context_str += f"- Недавние зоны: {', '.join(input_msg.recent_zones)}\n"
+        if input_msg.tags:
+            context_str += f"- Недавние теги: {', '.join(input_msg.tags[:50])}\n"  # Лимит 50, чтобы не перегружать промпт
+        if input_msg.categories:
+            context_str += f"- Недавние зоны: {', '.join(input_msg.categories)}\n"
         context_str += "Используй это для релевантных тегов и зоны (если текст не противоречит; стремись к последовательности)."
 
     full_prompt = f'Создай задачу из следующего текста:{context_str}\n\n{text}'
@@ -114,10 +111,10 @@ async def process_message(input_msg: InputMessage) -> OutputMessage:
 
     if task is None:
         logger.warning("Failed to generate task meta, using empty defaults")
-        task = Task(name="", description="", tags=[], zone="")
+        task = Task(title="", description="", tags=[], category="")
 
     return OutputMessage(
-        input_text=input_msg.text,
+        prompt=input_msg.prompt,
         task=task,
         model=MODEL,
         timestamp=datetime.now().isoformat()

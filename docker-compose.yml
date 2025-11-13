@@ -46,13 +46,14 @@ services:
       timeout: 10s
       retries: 3
     # NOTE: Указывание докеру что надо взять гпу (отрубить для сервака там её нет)
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: all
+    #          capabilities: [gpu]
+            
 
   ollama-setup:
     image: curlimages/curl:latest
