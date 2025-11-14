@@ -51,4 +51,28 @@ class UserService:
         response.raise_for_status()
         return response.json()
 
+    @staticmethod
+    def fetch_user_tasks(max_user_id) -> Sequence[Dict[str, Any]]:
+        """
+        Получить все задачи пользователя.
+        :param max_user_id: ID пользователя
+        :return: Список задач пользователя
+        """
+        url = f"{API_DEFAULT_URL}/users/{max_user_id}/tasks"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+
+    @staticmethod
+    def fetch_user_tags(max_user_id) -> Sequence[Dict[str, Any]]:
+        """
+        Получить все теги пользователя.
+        :param max_user_id: ID пользователя
+        :return: Список тегов пользователя
+        """
+        url = f"{API_DEFAULT_URL}/users/{max_user_id}/tags"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+
 user_service = UserService()

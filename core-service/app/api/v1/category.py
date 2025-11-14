@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ... import models
 from ...schemas import UserRead, CategoryRead, CategoryCreate, TagRead, TaskRead
 from ...database import get_db
-from ...schemas.category import CategoryUsersUpdate, CategoryUsersUpdateV2, APICategoryCreate
+from ...schemas.category import CategoryUsersUpdate, CategoryUsersUpdateV2, APICategoryCreate, CategoryUpdate
 from ...services import CategoryService, UserService
 
 router = APIRouter(prefix="/categories", tags=["categories"])
@@ -105,6 +105,22 @@ async def create_category(
     return CategoryRead.model_validate(category)
 
 # --------------- UPDATE ----------------
+
+@router.patch("/{category_id}", response_model=CategoryRead)
+async def update_category(
+    category_id: int,
+    payload: CategoryUpdate,
+    category_service: CategoryService = Depends(get_category_service)
+):
+    """Обновить категорию по ID"""
+    payload.id = category_id
+    category = await category_service.patch(payload)
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Не удалось обновить категорию"
+        )
+    return CategoryRead.model_validate(category)
 
 @router.post("/{category_id}/users/{max_user_id}", response_model=CategoryRead)
 async def add_user_to_category(

@@ -23,7 +23,7 @@ from maxapi.types.message import Message
 from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
 
 from . import settings
-from .services import user_service
+from .services import user_service, category_service
 
 bot = Bot(settings.BOT_TOKEN)
 dp = Dispatcher()
@@ -53,7 +53,7 @@ state = FSMContext(chat_id)
 data = await state.get_data()
 
 # указание стейта (стейты пока-что константы но будут переделаны для добавления можешь новые константы объявлять)
-await state.set_state(WAITING_DESCRIPTION)
+await state.set_state(WAITING_TASK_DESCRIPTION)
 
 # добавление данных в контекст
 await state.update_data({"selected_category": payload.text})
@@ -130,19 +130,18 @@ class StateFilter(BaseFilter):
 
 # Стейты пока константами так (переделаю по нормальному)
 # FIXME
-WAITING_DESCRIPTION = "waiting_description"
+WAITING_TASK_DESCRIPTION = "waiting_task_description"
 WAITING_CREATE_CATEGORY = "waiting_create_name"
 WAITING_EDIT_CATEGORY = "waiting_edit_category"
+WAITING_CATEGORY_DESCRIPTION = "waiting_category_description"
 
 class ActionButton(CallbackPayload, prefix="action"):
     foo: str
     action: str
 
-
 class TextButton(CallbackPayload, prefix="text"):
     foo: str
     text: str
-
 
 class TagsButton(CallbackPayload, prefix="tags"):
     foo: str
@@ -152,24 +151,6 @@ class TaskButton(CallbackPayload, prefix="task"):
     foo: str
     text: str
 
-categories = [
-    "Cat1",
-    "Cat2",
-    "Cat3"
-]  # информация о категория должны приходить с бэка
-
-tasks = [
-    "Task1",
-    "Task2",
-    "Task3",
-]  # информация о ближайших задачах должны приходить с бэка
-
-tags = [
-    'Tag1',
-    'Tag2',
-    'Tag3',
-] #должны приходить с бэка
-
 builder = InlineKeyboardBuilder()
 
 builder.row(
@@ -178,16 +159,19 @@ builder.row(
         payload=ActionButton(foo="create_task", action="edit").pack(),
     ),
     CallbackButton(
-        text="Управление категориями",
-        payload=ActionButton(foo="manage_category", action="edit").pack(),
-    ),
-    CallbackButton(
-        text="Посмотреть ближайшие задачи",
+        text="Ближайшие задачи",
         payload=ActionButton(foo="nearest_task", action="edit").pack(),
+    )
+
+)
+builder.row(
+    CallbackButton(
+        text="Поиск задач",
+        payload=ActionButton(foo="tasks_on_tags", action="edit").pack(),
     ),
     CallbackButton(
-        text="Поиск задач по тегам",
-        payload=ActionButton(foo="tasks_on_tags", action="edit").pack(),
+        text="Категории",
+        payload=ActionButton(foo="manage_category", action="edit").pack(),
     )
 )
 
@@ -239,14 +223,26 @@ async def start(event: MessageCreated):
         ],
     )
 
+# -------- Создание задачи --------
+
 @dp.message_callback(ActionButton.filter(F.foo == "create_task"))
 async def create_task(event: MessageCallback, payload: ActionButton):
-    # Интересная реализация в либе?
     chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
     state = FSMContext(chat_id)
     await state.update_data({"context": "create_task"})
 
     categoryButton = InlineKeyboardBuilder()
+
+    categories = [category["name"] for category in user_service.fetch_user_categories(user_id)]
+
+    if categories == []:
+        await event.message.answer(
+            text="У вас нет категорий. Пожалуйста, создайте категорию перед созданием задачи.",
+            attachments=[],
+        )
+        await bot.delete_message(event.message.body.mid)
+        return
 
     for idx, category in enumerate(categories):
         payload_packed = TextButton(foo=str(idx), text=category).pack()
@@ -260,34 +256,9 @@ async def create_task(event: MessageCallback, payload: ActionButton):
     )
     await bot.delete_message(event.message.body.mid)
 
-@dp.message_callback(TextButton.filter())
-async def process_category_selection(event: MessageCallback, payload: TextButton):
-    chat_id = str(event.get_ids()[0])
-    state = FSMContext(chat_id)
-    data = await state.get_data()
 
-    context = data.get("context", "")
-    if context == "create_task":
-        await state.update_data({"selected_category": payload.text})
-        await state.set_state(WAITING_DESCRIPTION)
-        await event.message.answer(
-            text=f"Категория {payload.text} выбрана. Введите описание задачи:",
-            attachments=[],
-        )
-        await bot.delete_message(event.message.body.mid)
-    elif context == "manage_category":
-        # Логика для manage: например, edit
-        await state.update_data({"selected_category": payload.text})
-        await state.set_state(WAITING_EDIT_CATEGORY)
-        await event.message.answer(
-            text=f"Категория {payload.text} выбрана. Введите новое название категории:",
-            attachments=[],
-        )
-        await bot.delete_message(event.message.body.mid)
-    # Другие контексты...
 
-# Хендлер для текста: только в стейте WAITING_DESCRIPTION
-@dp.message_created(StateFilter(WAITING_DESCRIPTION))
+@dp.message_created(StateFilter(WAITING_TASK_DESCRIPTION))
 async def process_task_description(event: MessageCreated):
     chat_id = str(event.get_ids()[0])
     state = FSMContext(chat_id)
@@ -308,9 +279,38 @@ async def process_task_description(event: MessageCreated):
     )
     await state.clear()  # Выход
 
+# -------- Управление категориями --------
+
+@dp.message_callback(TextButton.filter())
+async def process_category_selection(event: MessageCallback, payload: TextButton):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+    data = await state.get_data()
+
+    context = data.get("context", "")
+    if context == "create_task":
+        await state.update_data({"selected_category": payload.text})
+        await state.set_state(WAITING_TASK_DESCRIPTION)
+        await event.message.answer(
+            text=f"Категория {payload.text} выбрана. Введите описание задачи:",
+            attachments=[],
+        )
+        await bot.delete_message(event.message.body.mid)
+    elif context == "manage_category":
+        # Логика для manage: например, edit
+        await state.update_data({"selected_category": payload.text})
+        await state.set_state(WAITING_EDIT_CATEGORY)
+        await event.message.answer(
+            text=f"Категория {payload.text} выбрана. Введите новое название категории:",
+            attachments=[],
+        )
+        await bot.delete_message(event.message.body.mid)
+    # Другие контексты...
+
 @dp.message_callback(ActionButton.filter(F.foo == "manage_category"))
 async def manage_category(event: MessageCallback, payload: ActionButton):
     chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
     state = FSMContext(chat_id)
     await state.update_data({"context": "manage_category"})  # Флаг
 
@@ -321,6 +321,9 @@ async def manage_category(event: MessageCallback, payload: ActionButton):
             payload=ActionButton(foo="create_category", action="edit").pack(),
         )
     )
+
+    categories = [category["name"] for category in user_service.fetch_user_categories(user_id)]
+
     for idx, category in enumerate(categories):
         payload_packed = TextButton(foo=str(idx), text=category).pack()
         categoryButton.row(CallbackButton(text=category, payload=payload_packed))
@@ -328,6 +331,8 @@ async def manage_category(event: MessageCallback, payload: ActionButton):
         text="Ваши категории:", attachments=[categoryButton.as_markup()]
     )
     await bot.delete_message(event.message.body.mid)
+
+# -------- Создание категории --------
 
 @dp.message_callback(ActionButton.filter(F.foo == "create_category"))
 async def start_create_category(event: MessageCallback, payload: ActionButton):
@@ -337,14 +342,27 @@ async def start_create_category(event: MessageCallback, payload: ActionButton):
     await event.message.answer(text="Введите название категории:", attachments=[])
     await bot.delete_message(event.message.body.mid)
 
-# Хендлер для текста: только в стейте WAITING_CREATE_CATEGORY
 @dp.message_created(StateFilter(WAITING_CREATE_CATEGORY))
 async def process_category_name(event: MessageCreated):
     chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
     state = FSMContext(chat_id)
     cat = event.message.body.text
 
-    # Передача на бэк/ИИ для создания в БД
+    await state.update_data({"new_category_name": cat})
+    await state.set_state(WAITING_CATEGORY_DESCRIPTION)
+    await event.message.answer(text="Введите описание категории:", attachments=[])
+
+@dp.message_created(StateFilter(WAITING_CATEGORY_DESCRIPTION))
+async def process_category_name(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
+    state = FSMContext(chat_id)
+    description_cat = event.message.body.text
+    cat = (await state.get_data()).get("new_category_name", "")
+
+    category = category_service.create(user_id, cat, description_cat)
+
     await event.message.answer(f'Ваша новая категория "{cat}" создана!')
     await event.message.answer(
         text="Вот мои команды:",
@@ -354,7 +372,12 @@ async def process_category_name(event: MessageCreated):
     )
     await state.clear()
 
-# Для edit категории (пример обработки ввода)
+# -------- Добавить пользователя в категорию --------
+
+pass
+
+# -------- Редактирование категории --------
+
 @dp.message_created(StateFilter(WAITING_EDIT_CATEGORY))
 async def process_edit_category(event: MessageCreated):
     chat_id = str(event.get_ids()[0])
@@ -363,6 +386,8 @@ async def process_edit_category(event: MessageCreated):
 
     data = await state.get_data()
     category = data.get("selected_category", "Unknown")
+
+    category_service.rename()
 
     await event.message.answer(f"Выбрана категория: {category} изменения {input_text}")
     await event.message.answer(
@@ -373,9 +398,14 @@ async def process_edit_category(event: MessageCreated):
     )
     await state.clear()
 
+# -------- Ближайшие задачи --------
+
 @dp.message_callback(ActionButton.filter(F.foo == "nearest_task"))
 async def nearest_task(event: MessageCallback, payload: ActionButton):
     nearestTaskButton = InlineKeyboardBuilder()
+
+    tasks = [task["title"] for task in user_service.fetch_user_tasks()]
+
     for idx, task in enumerate(tasks):
         payload_packed = TaskButton(foo=str(idx), text=task).pack()
         nearestTaskButton.row(CallbackButton(text=task, payload=payload_packed))
@@ -387,7 +417,10 @@ async def nearest_task(event: MessageCallback, payload: ActionButton):
 
 @dp.message_callback(ActionButton.filter(F.foo == "tasks_on_tags"))
 async def select_tag(event: MessageCallback, payload: ActionButton):
+    user_id = event.get_ids()[1]
     TagsButtonBuilder = InlineKeyboardBuilder()
+
+    tags = [tag["name"] for tag in user_service.fetch_user_tags(user_id)]
 
     for idx, tag in enumerate(tags):
         payload_packed = TagsButton(foo=str(idx), text=tag).pack()

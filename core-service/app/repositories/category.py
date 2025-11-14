@@ -76,6 +76,18 @@ class CategoryRepository(BaseRepository):
 
     # --------------- CREATE ----------------
 
+    async def update(self, payload: CategoryUpdate) -> Category:
+        category = await self.get_by_id(payload.id)
+        if not category:
+            raise ValueError(f"Category with ID={payload.id} not found")
+        for key, value in payload.model_dump().items():
+            if value is not None and key != "id":
+                setattr(category, key, value)
+        self.session.add(category)
+        await self.session.commit()
+        await self.session.refresh(category, ['users', 'tags', 'tasks'])
+        return category
+
     async def create(self, payload: CategoryCreate) -> Optional[Category]:
         category = Category(
             owner_id=payload.user_id,

@@ -16,7 +16,7 @@ class CategoryCreate(BaseModel):
     description: Optional[str] = None
 
 class CategoryUpdate(BaseModel):
-    id: int
+    id: int = None
     name: Optional[str] = None
     description: Optional[str] = None
     owner_id: Optional[int] = None
