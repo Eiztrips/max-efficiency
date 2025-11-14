@@ -8,9 +8,11 @@ Kafka-сервис для работы с тасками с использова
 """
 import os
 import json
+import random
+
 import yaml
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import asyncio
@@ -109,6 +111,26 @@ async def generate_task_metadata(input_msg: InputMessage) -> Optional[Task]:
 
 async def process_message(input_msg: InputMessage) -> OutputMessage:
     task = await generate_task_metadata(input_msg)
+
+    #mock УБРАТЬ ПОСЛЕ ТЕСТОВ, А ТО ЖЕСТЬ БУДЕТ С ОЛЛАМОЙ, КОТОРАЯ НЕ ВСЕГДА РАБОТАЕТ, ДАЖЕ ЛОКАЛЬНО, ПОЭТОМУ ПОКА ЧТО МОК
+    # task = {
+    #     "title": random.choice([
+    #         "Купить продукты", "Записаться к врачу", "Оплатить счета",
+    #         "Позвонить другу", "Сделать презентацию", "Починить кран",
+    #         "Забрать посылку", "Прочитать книгу", "Тренировка в зале"
+    #     ]),
+    #     "description": random.choice([
+    #         "Купить молоко, хлеб и яйца в магазине до вечера.",
+    #         "Не забыть взять с собой документы и карту.",
+    #         "Подготовить материалы и отправить по почте.",
+    #         "Согласовать время встречи и место проведения."
+    #     ]),
+    #     "tags": random.sample(["покупки", "продукты", "работа", "здоровье", "дом", "спорт", "личное", "финансы"],
+    #                           k=random.randint(1, 3)),
+    #     "expiration_date": (datetime.now() + timedelta(days=random.randint(1, 30))).strftime(
+    #         "%Y-%m-%d") if random.choice([True, False]) else None,
+    #     "category": random.choice(["личное", "работа", "здоровье", "финансы", "дом"])
+    # }
 
     if task is None:
         logger.warning("Failed to generate task meta, using empty defaults")

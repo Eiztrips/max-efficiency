@@ -3,7 +3,7 @@ from fastapi import FastAPI
 
 from app.database import init_db
 from app.core.redis import init_redis, close_redis
-from .config import settings
+from . import settings
 from .services.kafka import kafka_producer, kafka_consumer
 from .api import router as api_router
 from .core import setup_middleware

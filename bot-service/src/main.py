@@ -1,10 +1,8 @@
 import asyncio
+import datetime
 import logging
-import maxapi
-from argparse import Action
 from typing import Any, Dict, Optional
 
-from examples.keyboard.main import payload
 from maxapi import Bot, Dispatcher, F
 from maxapi.filters import BaseFilter
 from maxapi.filters.callback_payload import CallbackPayload
@@ -16,11 +14,13 @@ from maxapi.types import (
     MessageCreated,
     UpdateUnion,
 )
-from maxapi.types.callback import Callback
 from maxapi.types.chats import Chat
-from maxapi.types.message import Message
 from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
-from settings import settings
+
+from . import settings
+from .services.user import user_service
+from .services.category import category_service
+from .services.task import task_service
 
 bot = Bot(settings.BOT_TOKEN)
 dp = Dispatcher()
@@ -29,34 +29,11 @@ logging.basicConfig(level=logging.INFO)
 
 
 """
-NOTE ПРОЧИТАТЬ ОЛЕГ ЧИТАЙ
+NOTE todos:
 
-Дабы не городить вложенных функций якобы для того чтобы хендлер не вызывался несколько раз,
-умные умы разработчиков aiogram и прочих либ для разработки ботов придумали такую вещь как стейты.
-Стейты реализуются на фильтрах, ставится стейт на запросе нужных данных, после запроса этих данных стейт убирается и хандлер уже не работает.
-Фильтры в библиотеке maxapi реализованы поэтому проблем нет
-
-Использование
-
-# В хандлере указывается фильтр State
-@dp.message_created(StateFilter(WAITING_CREATE_CATEGORY))
-... code ...
-
-Для указания стейта используется
-
-# Для получения стейта этого чата стейт + данные которые можно сохранить в данном контексте (любые)
-chat_id = str(event.get_ids()[0])
-state = FSMContext(chat_id)
-data = await state.get_data()
-
-# указание стейта (стейты пока-что константы но будут переделаны для добавления можешь новые константы объявлять)
-await state.set_state(WAITING_DESCRIPTION)
-
-# добавление данных в контекст
-await state.update_data({"selected_category": payload.text})
-
-# получение данных из контекста
-category = data.get("selected_category", "Unknown")
+- Перенести стейт-машинку в отдельный класс
+- сделать рефактор кода не хранить все в мейн
+- кастомизировать текст
 
 """
 user_states: Dict[str, str] = {}
@@ -127,19 +104,21 @@ class StateFilter(BaseFilter):
 
 # Стейты пока константами так (переделаю по нормальному)
 # FIXME
-WAITING_DESCRIPTION = "waiting_description"
+WAITING_TASK_DESCRIPTION = "waiting_task_description"
 WAITING_CREATE_CATEGORY = "waiting_create_name"
 WAITING_EDIT_CATEGORY = "waiting_edit_category"
+WAITING_CATEGORY_DESCRIPTION = "waiting_category_description"
+WAITING_EDIT_CATEGORY_DESCRIPTION = "waiting_edit_category_description"
+WAITING_TASK_TITLE = "waiting_task_title"
+WAITING_TASK_DESCRIPTION_EDIT = "waiting_task_description_edit"
 
 class ActionButton(CallbackPayload, prefix="action"):
     foo: str
     action: str
 
-
 class TextButton(CallbackPayload, prefix="text"):
     foo: str
     text: str
-
 
 class TagsButton(CallbackPayload, prefix="tags"):
     foo: str
@@ -149,86 +128,267 @@ class TaskButton(CallbackPayload, prefix="task"):
     foo: str
     text: str
 
-categories = [
-    "Cat1",
-    "Cat2",
-    "Cat3"
-]  # информация о категория должны приходить с бэка
+class TaskActionButton(CallbackPayload, prefix="task_action"):
+    task_id: int
+    action: str
 
-tasks = [
-    "Task1",
-    "Task2",
-    "Task3",
-]  # информация о ближайших задачах должны приходить с бэка
+class CategoryActionButton(CallbackPayload, prefix="cat_action"):
+    category_id: int
+    action: str
 
-tags = [
-    'Tag1',
-    'Tag2',
-    'Tag3',
-] #должны приходить с бэка
+# TODO: МУВ паГИНация ТУ КОР СЕРВИС ЛЕЙТЕР
+class PaginationButton(CallbackPayload, prefix="pagination"):
+    page: int
+    action: str
+
+TASKS_PER_PAGE = 5
+
+class HomeButton(CallbackPayload, prefix="home"):
+    action: str
+
+def add_home_button(builder: InlineKeyboardBuilder):
+    builder.row(
+        CallbackButton(
+            text="На главную",
+            payload=HomeButton(action="return").pack(),
+        )
+    )
+    return builder
 
 builder = InlineKeyboardBuilder()
 
+builder.row(
+    CallbackButton(
+        text="Задачи",
+        payload=ActionButton(foo="my_tasks", action="edit").pack(),
+    ),
+    CallbackButton(
+        text="Категории",
+        payload=ActionButton(foo="manage_category", action="edit").pack(),
+    )
+
+)
 builder.row(
     CallbackButton(
         text="Создать задачу",
         payload=ActionButton(foo="create_task", action="edit").pack(),
     )
 )
-builder.row(
-    CallbackButton(
-        text="Управление категориями",
-        payload=ActionButton(foo="manage_category", action="edit").pack(),
-    )
-)
-builder.row(
-    CallbackButton(
-        text="Посмотреть ближайшие задачи",
-        payload=ActionButton(foo="nearest_task", action="edit").pack(),
-    )
-)
-builder.row(
-    CallbackButton(
-        text="Поиск задач по тегам",
-        payload=ActionButton(foo="tasks_on_tags", action="edit").pack(),
-    )
-)
 
+async def start_message(event):
+    chat_id, user_id = event.get_ids()[0], event.get_ids()[1]
+    tasks = task_service.fetch_tasks(
+        {"max_user_id": user_id, "to_date": datetime.datetime.now() + datetime.timedelta(days=7)})
+    if tasks:
+        message_task_info = f"У вас запланировано {len(tasks)} задач на ближайшие 7 дней.\n" + "\n".join(
+            [f"- {task['title']}" for task in tasks])
+    else:
+        message_task_info = "У вас нет запланированных задач на ближайшие 7 дней."
+    await bot.send_message(
+        chat_id=chat_id,
+        text=message_task_info,
+        attachments=[
+            builder.as_markup(),
+        ]
+    )
 
 @dp.bot_started()
 async def bot_started(event: BotStarted):
-    await bot.send_message(
-        chat_id=event.chat_id,
-        text=f"Привет {event.user.first_name} {event.user.last_name}! Я бот для повышения твоей эффективности.\n\n"
-        "Со мной ты можешь:\n"
-        "1) Создавать для себя задачи\n"
-        "2) Делить задачи по категориям\n"
-        "3) Ставить задачи перед своей командой, добавляя новых пользователей\n\n"
-        "А главное - я сформирую задачи за тебя! С тебя требуется только ввести описание задачи, остальное будет на мне!\n\n"
-        "Теперь пропиши команду /start, что бы начать использование бота.",
-    )
+    if user_service.get_user_by_max_user_id(event.user.user_id) is None:
+        user_service.create_user(
+            max_user_id=event.user.user_id,
+            username=event.user.username,
+        )
+        await bot.send_message(
+            chat_id=event.chat_id,
+            text=f"Привет {event.user.first_name}! Я бот для повышения твоей эффективности.\n\n"
+                 "Со мной ты можешь:\n"
+                 "1) Создавать для себя задачи\n"
+                 "2) Делить задачи по категориям\n"
+                 "3) Ставить задачи перед своей командой, добавляя новых пользователей\n\n"
+                 "А главное - я сформирую задачи за тебя! С тебя требуется только ввести описание задачи, остальное будет на мне!\n\n",
+            attachments=[
+                builder.as_markup(),
+            ]
+        )
+    else:
+        await start_message(event)
 
 @dp.message_created(Command("start"))
 async def start(event: MessageCreated):
-    await event.message.answer(
-        text="Вот мои команды:",
-        attachments=[
-            builder.as_markup(),
-        ],
+    chat_id, user_id = event.get_ids()[0], event.get_ids()[1]
+    if user_service.get_user_by_max_user_id(user_id) is None:
+        await bot.send_message(
+            chat_id=event.chat.chat_id,
+            text="Вы не зарегистрированы! Пожалуйста, начните чат со мной снова."
+        )
+        # В идеале await asyncio.sleep(10) + удаление чата, но либу надо форкать
+        return
+    await start_message(event)
+
+# -------- Возврат на главную --------
+
+@dp.message_callback(HomeButton.filter(F.action == "return"))
+async def return_home(event: MessageCallback, payload: HomeButton):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+    await state.clear()
+    await bot.delete_message(event.message.body.mid)
+    await start_message(event)
+
+# -------- Просмотр всех задач --------
+
+@dp.message_callback(ActionButton.filter(F.foo == "my_tasks"))
+async def my_tasks(event: MessageCallback, payload: ActionButton):
+    chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
+    state = FSMContext(chat_id)
+
+    tasks = task_service.fetch_tasks({"max_user_id": user_id})
+
+    if not tasks:
+        no_tasks_builder = InlineKeyboardBuilder()
+        add_home_button(no_tasks_builder)
+        await event.message.answer(
+            text="У вас пока нет задач",
+            attachments=[no_tasks_builder.as_markup()]
+        )
+        await bot.delete_message(event.message.body.mid)
+        return
+
+    await state.update_data({"cached_tasks": tasks})
+
+    await show_tasks_page(event, tasks, page=0, delete_old=True)
+
+@dp.message_callback(PaginationButton.filter(F.action == "my_tasks"))
+async def my_tasks_pagination(event: MessageCallback, payload: PaginationButton):
+    chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
+    state = FSMContext(chat_id)
+
+    data = await state.get_data()
+    tasks = data.get("cached_tasks")
+
+    if not tasks:
+        tasks = task_service.fetch_tasks({"max_user_id": user_id})
+        await state.update_data({"cached_tasks": tasks})
+
+    if not tasks:
+        no_tasks_builder = InlineKeyboardBuilder()
+        add_home_button(no_tasks_builder)
+        await event.message.answer(
+            text="У вас пока нет задач",
+            attachments=[no_tasks_builder.as_markup()]
+        )
+        await bot.delete_message(event.message.body.mid)
+        return
+
+    await show_tasks_page(event, tasks, page=payload.page, delete_old=True)
+
+@dp.message_callback(PaginationButton.filter(F.action == "my_tasks"))
+async def my_tasks_pagination(event: MessageCallback, payload: PaginationButton):
+    user_id = event.get_ids()[1]
+
+    tasks = task_service.fetch_tasks(
+        {"max_user_id": user_id}
     )
+
+    if not tasks:
+        no_tasks_builder = InlineKeyboardBuilder()
+        add_home_button(no_tasks_builder)
+        await event.message.answer(
+            text="У вас пока нет задач",
+            attachments=[no_tasks_builder.as_markup()]
+        )
+        await bot.delete_message(event.message.body.mid)
+        return
+
+    await show_tasks_page(event, tasks, page=payload.page, delete_old=True)
+
+async def show_tasks_page(event: MessageCallback, tasks: list, page: int, delete_old: bool = False):
+    total_tasks = len(tasks)
+    total_pages = (total_tasks + TASKS_PER_PAGE - 1) // TASKS_PER_PAGE
+
+    if page < 0:
+        page = 0
+    elif page >= total_pages:
+        page = total_pages - 1
+
+    start_idx = page * TASKS_PER_PAGE
+    end_idx = min(start_idx + TASKS_PER_PAGE, total_tasks)
+
+    tasks_on_page = tasks[start_idx:end_idx]
+
+    TaskButtonBuilder = InlineKeyboardBuilder()
+
+    for task in tasks_on_page:
+        payload_packed = TaskButton(foo=str(task["id"]), text=task["title"]).pack()
+        TaskButtonBuilder.row(
+            CallbackButton(
+                text=task["title"],
+                payload=payload_packed
+            )
+        )
+
+    nav_buttons = []
+    if page > 0:
+        nav_buttons.append(
+            CallbackButton(
+                text="⬅️ Назад",
+                payload=PaginationButton(page=page - 1, action="my_tasks").pack()
+            )
+        )
+    if page < total_pages - 1:
+        nav_buttons.append(
+            CallbackButton(
+                text="Вперёд ➡️",
+                payload=PaginationButton(page=page + 1, action="my_tasks").pack()
+            )
+        )
+
+    if nav_buttons:
+        TaskButtonBuilder.row(*nav_buttons)
+
+    add_home_button(TaskButtonBuilder)
+
+    page_info = f"Страница {page + 1} из {total_pages}"
+    await event.message.answer(
+        text=f'Ваши задачи:\n{page_info}',
+        attachments=[
+            TaskButtonBuilder.as_markup(),
+        ]
+    )
+    if delete_old:
+        await bot.delete_message(event.message.body.mid)
+
+# -------- Создание задачи --------
 
 @dp.message_callback(ActionButton.filter(F.foo == "create_task"))
 async def create_task(event: MessageCallback, payload: ActionButton):
-    # Интересная реализация в либе?
     chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
     state = FSMContext(chat_id)
     await state.update_data({"context": "create_task"})
 
     categoryButton = InlineKeyboardBuilder()
 
+    categories = user_service.fetch_user_categories(user_id)
+
+    if categories == []:
+        no_cat_builder = InlineKeyboardBuilder()
+        add_home_button(no_cat_builder)
+        await event.message.answer(
+            text="У вас нет категорий. Пожалуйста, создайте категорию перед созданием задачи.",
+            attachments=[no_cat_builder.as_markup()],
+        )
+        await bot.delete_message(event.message.body.mid)
+        return
+
     for idx, category in enumerate(categories):
-        payload_packed = TextButton(foo=str(idx), text=category).pack()
-        categoryButton.row(CallbackButton(text=category, payload=payload_packed))
+        payload_packed = TextButton(foo=str(category["id"]), text=category["name"]).pack()
+        categoryButton.row(CallbackButton(text=category["name"], payload=payload_packed))
+
+    add_home_button(categoryButton)
 
     await event.message.answer(
         text="Выберете категорию задачи ",
@@ -238,6 +398,189 @@ async def create_task(event: MessageCallback, payload: ActionButton):
     )
     await bot.delete_message(event.message.body.mid)
 
+@dp.message_created(StateFilter(WAITING_TASK_DESCRIPTION))
+async def process_task_description(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
+    state = FSMContext(chat_id)
+    msg = event.message.body.text
+
+    data = await state.get_data()
+    category_name = data.get("selected_category", "")
+    category_id = data.get("selected_category_id", None)
+
+    task_service.create(max_user_id=user_id, prompt=msg, category_id=category_id)
+
+    await event.message.answer(
+        f'Задача в категории "{category_name}" создается...\nОписание: {msg}'
+    )
+    await start_message(event)
+    await state.clear()
+
+# -------- Управление задачами --------
+
+@dp.message_callback(TaskActionButton.filter(F.action == "rename"))
+async def rename_task(event: MessageCallback, payload: TaskActionButton):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+
+    await state.update_data({"selected_task_id": payload.task_id})
+    await state.set_state(WAITING_TASK_TITLE)
+    rename_builder = InlineKeyboardBuilder()
+    add_home_button(rename_builder)
+    await event.message.answer(
+        text="Введите новое название задачи:",
+        attachments=[rename_builder.as_markup()]
+    )
+    await bot.delete_message(event.message.body.mid)
+
+@dp.message_callback(TaskActionButton.filter(F.action == "edit_desc"))
+async def edit_task_description(event: MessageCallback, payload: TaskActionButton):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+
+    await state.update_data({"selected_task_id": payload.task_id})
+    await state.set_state(WAITING_TASK_DESCRIPTION_EDIT)
+    edit_desc_builder = InlineKeyboardBuilder()
+    add_home_button(edit_desc_builder)
+    await event.message.answer(
+        text="Введите новое описание задачи:",
+        attachments=[edit_desc_builder.as_markup()]
+    )
+    await bot.delete_message(event.message.body.mid)
+
+@dp.message_callback(TaskActionButton.filter(F.action == "delete"))
+async def delete_task(event: MessageCallback, payload: TaskActionButton):
+    task_id = payload.task_id
+
+    task_service.delete(task_id)
+
+    await event.message.answer(
+        text="Задача удалена!",
+        attachments=[]
+    )
+    await bot.delete_message(event.message.body.mid)
+    await start_message(event)
+
+@dp.message_created(StateFilter(WAITING_TASK_TITLE))
+async def process_rename_task(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+    input_text = event.message.body.text
+
+    data = await state.get_data()
+    task_id = data.get("selected_task_id")
+
+    if task_id:
+        task_service.rename(task_id=task_id, new_title=input_text)
+        await event.message.answer(
+            f'Название задачи обновлено: "{input_text}"'
+        )
+    else:
+        await event.message.answer("Ошибка: задача не найдена")
+
+    await start_message(event)
+    await state.clear()
+
+@dp.message_created(StateFilter(WAITING_TASK_DESCRIPTION_EDIT))
+async def process_edit_task_description(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+    input_text = event.message.body.text
+
+    data = await state.get_data()
+    task_id = data.get("selected_task_id")
+
+    if task_id:
+        task_service.rename_description(task_id=task_id, new_description=input_text)
+        await event.message.answer(
+            'Описание задачи обновлено'
+        )
+    else:
+        await event.message.answer("Ошибка: задача не найдена")
+
+    await start_message(event)
+    await state.clear()
+
+# -------- Ближайшие задачи --------
+# убрал, они будут отображаться при старте бота
+
+# -------- Поиск задач по тегам --------
+# TODO: на бекенде сделать сохранение тегов при создании задачи
+"""@dp.message_callback(ActionButton.filter(F.foo == "tasks_on_tags"))
+async def select_tag(event: MessageCallback, payload: ActionButton):
+    user_id = event.get_ids()[1]
+    TagsButtonBuilder = InlineKeyboardBuilder()
+
+    tags = user_service.fetch_user_tags(user_id)
+
+    if not tags:
+        await event.message.answer(
+            text="У вас пока нет тегов",
+            attachments=[]
+        )
+        await bot.delete_message(event.message.body.mid)
+        return
+
+    for idx, tag in enumerate(tags):
+        payload_packed = TagsButton(foo=str(tag["id"]), text=tag["name"]).pack()
+        TagsButtonBuilder.row(
+            CallbackButton(
+                text=tag["name"],
+                payload=payload_packed
+            )
+        )
+
+    await event.message.answer(
+        text='Выберете интересующий тег',
+        attachments=[
+            TagsButtonBuilder.as_markup(),
+        ]
+    )
+    await bot.delete_message(event.message.body.mid)
+"""
+
+# -------- Создание категории --------
+
+@dp.message_callback(ActionButton.filter(F.foo == "create_category"))
+async def start_create_category(event: MessageCallback, payload: ActionButton):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+    await state.set_state(WAITING_CREATE_CATEGORY)
+    create_cat_builder = InlineKeyboardBuilder()
+    add_home_button(create_cat_builder)
+    await event.message.answer(text="Введите название категории:", attachments=[create_cat_builder.as_markup()])
+    await bot.delete_message(event.message.body.mid)
+
+@dp.message_created(StateFilter(WAITING_CREATE_CATEGORY))
+async def process_category_name(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
+    state = FSMContext(chat_id)
+    cat = event.message.body.text
+
+    await state.update_data({"new_category_name": cat})
+    await state.set_state(WAITING_CATEGORY_DESCRIPTION)
+    cat_desc_builder = InlineKeyboardBuilder()
+    add_home_button(cat_desc_builder)
+    await event.message.answer(text="Введите описание категории:", attachments=[cat_desc_builder.as_markup()])
+
+@dp.message_created(StateFilter(WAITING_CATEGORY_DESCRIPTION))
+async def process_category_name(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
+    state = FSMContext(chat_id)
+    description_cat = event.message.body.text
+    cat = (await state.get_data()).get("new_category_name", "")
+
+    category = category_service.create(user_id, cat, description_cat)
+
+    await event.message.answer(f'Ваша новая категория "{cat}" создана!')
+    await start_message(event)
+    await state.clear()
+
+# -------- Управление категориями --------
+
 @dp.message_callback(TextButton.filter())
 async def process_category_selection(event: MessageCallback, payload: TextButton):
     chat_id = str(event.get_ids()[0])
@@ -246,51 +589,72 @@ async def process_category_selection(event: MessageCallback, payload: TextButton
 
     context = data.get("context", "")
     if context == "create_task":
-        await state.update_data({"selected_category": payload.text})
-        await state.set_state(WAITING_DESCRIPTION)
+        await state.update_data({
+            "selected_category": payload.text,
+            "selected_category_id": int(payload.foo)
+        })
+        await state.set_state(WAITING_TASK_DESCRIPTION)
+        task_desc_builder = InlineKeyboardBuilder()
+        add_home_button(task_desc_builder)
         await event.message.answer(
             text=f"Категория {payload.text} выбрана. Введите описание задачи:",
-            attachments=[],
+            attachments=[task_desc_builder.as_markup()],
         )
         await bot.delete_message(event.message.body.mid)
     elif context == "manage_category":
-        # Логика для manage: например, edit
-        await state.update_data({"selected_category": payload.text})
-        await state.set_state(WAITING_EDIT_CATEGORY)
+        category_id = int(payload.foo)
+        category = category_service.get_by_id(category_id)
+
+        if not category:
+            error_builder = InlineKeyboardBuilder()
+            add_home_button(error_builder)
+            await event.message.answer(
+                text="Категория не найдена",
+                attachments=[error_builder.as_markup()]
+            )
+            await bot.delete_message(event.message.body.mid)
+            return
+
+        await state.update_data({
+            "selected_category": payload.text,
+            "selected_category_id": category_id
+        })
+
+        manage_builder = InlineKeyboardBuilder()
+        manage_builder.row(
+            CallbackButton(
+                text="Переименовать",
+                payload=CategoryActionButton(category_id=category_id, action="rename").pack(),
+            )
+        )
+        manage_builder.row(
+            CallbackButton(
+                text="Изменить описание",
+                payload=CategoryActionButton(category_id=category_id, action="edit_desc").pack(),
+            )
+        )
+        manage_builder.row(
+            CallbackButton(
+                text="Удалить категорию",
+                payload=CategoryActionButton(category_id=category_id, action="delete").pack(),
+            )
+        )
+
+        add_home_button(manage_builder)
+
+        category_desc = category.get("description", "Описание отсутствует")
         await event.message.answer(
-            text=f"Категория {payload.text} выбрана. Введите новое название категории:",
-            attachments=[],
+            text=f'Категория: {payload.text}\nОписание: {category_desc}',
+            attachments=[manage_builder.as_markup()]
         )
         await bot.delete_message(event.message.body.mid)
-    # Другие контексты...
-
-# Хендлер для текста: только в стейте WAITING_DESCRIPTION
-@dp.message_created(StateFilter(WAITING_DESCRIPTION))
-async def process_task_description(event: MessageCreated):
-    chat_id = str(event.get_ids()[0])
-    state = FSMContext(chat_id)
-    msg = event.message.body.text
-
-    data = await state.get_data()
-    category = data.get("selected_category", "Unknown")
-
-    # Передача на бэк/ИИ: msg + category
-    await event.message.answer(
-        f'Ваша новая задача в категории "{category}": {msg}'
-    )  # Сгенерированная с бэка
-    await event.message.answer(
-        text="Вот мои команды:",
-        attachments=[
-            builder.as_markup(),
-        ],
-    )
-    await state.clear()  # Выход
 
 @dp.message_callback(ActionButton.filter(F.foo == "manage_category"))
 async def manage_category(event: MessageCallback, payload: ActionButton):
     chat_id = str(event.get_ids()[0])
+    user_id = event.get_ids()[1]
     state = FSMContext(chat_id)
-    await state.update_data({"context": "manage_category"})  # Флаг
+    await state.update_data({"context": "manage_category"})
 
     categoryButton = InlineKeyboardBuilder()
     categoryButton.row(
@@ -299,136 +663,108 @@ async def manage_category(event: MessageCallback, payload: ActionButton):
             payload=ActionButton(foo="create_category", action="edit").pack(),
         )
     )
+
+    categories = user_service.fetch_user_categories(user_id)
+
     for idx, category in enumerate(categories):
-        payload_packed = TextButton(foo=str(idx), text=category).pack()
-        categoryButton.row(CallbackButton(text=category, payload=payload_packed))
+        payload_packed = TextButton(foo=str(category["id"]), text=category["name"]).pack()
+        categoryButton.row(CallbackButton(text=category["name"], payload=payload_packed))
+
+    add_home_button(categoryButton)
+
     await event.message.answer(
         text="Ваши категории:", attachments=[categoryButton.as_markup()]
     )
     await bot.delete_message(event.message.body.mid)
 
-@dp.message_callback(ActionButton.filter(F.foo == "create_category"))
-async def start_create_category(event: MessageCallback, payload: ActionButton):
+
+# -------- Редактирование категории --------
+
+@dp.message_callback(CategoryActionButton.filter(F.action == "rename"))
+async def start_rename_category(event: MessageCallback, payload: CategoryActionButton):
     chat_id = str(event.get_ids()[0])
     state = FSMContext(chat_id)
-    await state.set_state(WAITING_CREATE_CATEGORY)
-    await event.message.answer(text="Введите название категории:", attachments=[])
+    data = await state.get_data()
+
+    await state.update_data({"selected_category_id": payload.category_id})
+    await state.set_state(WAITING_EDIT_CATEGORY)
+    rename_cat_builder = InlineKeyboardBuilder()
+    add_home_button(rename_cat_builder)
+    await event.message.answer(
+        text="Введите новое название категории:",
+        attachments=[rename_cat_builder.as_markup()]
+    )
     await bot.delete_message(event.message.body.mid)
 
-# Хендлер для текста: только в стейте WAITING_CREATE_CATEGORY
-@dp.message_created(StateFilter(WAITING_CREATE_CATEGORY))
-async def process_category_name(event: MessageCreated):
+@dp.message_callback(CategoryActionButton.filter(F.action == "edit_desc"))
+async def start_edit_category_description(event: MessageCallback, payload: CategoryActionButton):
     chat_id = str(event.get_ids()[0])
     state = FSMContext(chat_id)
-    cat = event.message.body.text
 
-    # Передача на бэк/ИИ для создания в БД
-    await event.message.answer(f'Ваша новая категория "{cat}" создана!')
+    await state.update_data({"selected_category_id": payload.category_id})
+    await state.set_state(WAITING_EDIT_CATEGORY_DESCRIPTION)
+    edit_cat_desc_builder = InlineKeyboardBuilder()
+    add_home_button(edit_cat_desc_builder)
     await event.message.answer(
-        text="Вот мои команды:",
-        attachments=[
-            builder.as_markup(),
-        ],
+        text="Введите новое описание категории:",
+        attachments=[edit_cat_desc_builder.as_markup()]
     )
-    await state.clear()
+    await bot.delete_message(event.message.body.mid)
 
-# Для edit категории (пример обработки ввода)
 @dp.message_created(StateFilter(WAITING_EDIT_CATEGORY))
-async def process_edit_category(event: MessageCreated):
+async def process_rename_category(event: MessageCreated):
     chat_id = str(event.get_ids()[0])
     state = FSMContext(chat_id)
     input_text = event.message.body.text
 
     data = await state.get_data()
-    category = data.get("selected_category", "Unknown")
+    category_name = data.get("selected_category", "Unknown")
+    category_id = data.get("selected_category_id")
 
-    await event.message.answer(f"Выбрана категория: {category} изменения {input_text}")
-    await event.message.answer(
-        text="Вот мои команды:",
-        attachments=[
-            builder.as_markup(),
-        ],
-    )
+    if category_id:
+        category_service.rename(category_id=category_id, new_name=input_text)
+        await event.message.answer(
+            f'Категория "{category_name}" переименована в "{input_text}"'
+        )
+    else:
+        await event.message.answer("Ошибка: категория не найдена")
+
+    await start_message(event)
     await state.clear()
 
-@dp.message_callback(ActionButton.filter(F.foo == "nearest_task"))
-async def nearest_task(event: MessageCallback, payload: ActionButton):
-    nearestTaskButton = InlineKeyboardBuilder()
-    for idx, task in enumerate(tasks):
-        payload_packed = TaskButton(foo=str(idx), text=task).pack()
-        nearestTaskButton.row(CallbackButton(text=task, payload=payload_packed))
-    await event.message.answer(
-        text="Ваши ближайшие задачи:",
-        attachments=[nearestTaskButton.as_markup()]
-    )
-    await bot.delete_message(event.message.body.mid)
+@dp.message_created(StateFilter(WAITING_EDIT_CATEGORY_DESCRIPTION))
+async def process_edit_category_description(event: MessageCreated):
+    chat_id = str(event.get_ids()[0])
+    state = FSMContext(chat_id)
+    input_text = event.message.body.text
 
-@dp.message_callback(ActionButton.filter(F.foo == "tasks_on_tags"))
-async def select_tag(event: MessageCallback, payload: ActionButton):
-    TagsButtonBuilder = InlineKeyboardBuilder()
+    data = await state.get_data()
+    category_name = data.get("selected_category", "Unknown")
+    category_id = data.get("selected_category_id")
 
-    for idx, tag in enumerate(tags):
-        payload_packed = TagsButton(foo=str(idx), text=tag).pack()
-
-        TagsButtonBuilder.row(
-            CallbackButton(
-                text=tag,
-                payload=payload_packed
-            )
+    if category_id:
+        category_service.rename_description(category_id=category_id, new_description=input_text)
+        await event.message.answer(
+            f'Описание категории "{category_name}" обновлено'
         )
+    else:
+        await event.message.answer("Ошибка: категория не найдена")
+
+    await start_message(event)
+    await state.clear()
+
+@dp.message_callback(CategoryActionButton.filter(F.action == "delete"))
+async def delete_category(event: MessageCallback, payload: CategoryActionButton):
+    category_id = payload.category_id
+
+    category_service.delete(category_id)
+
     await event.message.answer(
-        text = 'Выберете интересующий тег',
-        attachments = [
-            TagsButtonBuilder.as_markup(),
-        ]
+        text="Категория удалена!",
+        attachments=[]
     )
     await bot.delete_message(event.message.body.mid)
-
-@dp.message_callback(TagsButton.filter())
-async def select_task(event: MessageCallback, payload: TagsButton):
-
-    #Обновление списка задач по тегу с бэка при каждом новом выборе тега
-    Tasksontags = [
-        'TasksOnTag1',
-        'TasksOnTag2',
-        'TasksOnTag3',
-    ]
-
-    TaskOnTagsButton = InlineKeyboardBuilder()
-
-    for idx, tasksontag in enumerate(Tasksontags):
-        payload_packed = TaskButton(foo=str(idx), text=tasksontag).pack()
-
-        TaskOnTagsButton.row(
-            CallbackButton(
-                text=tasksontag,
-                payload=payload_packed
-            )
-        )
-    await event.message.answer(
-        text='Выберете задачу',
-        attachments=[
-            TaskOnTagsButton.as_markup(),
-        ]
-    )
-    await bot.delete_message(event.message.body.mid)
-
-@dp.message_callback(TaskButton.filter())
-async def switch_task(event: MessageCallback, payload: TaskButton):
-    await event.message.answer(
-        text=f'Задача "{payload.text}" выбрана. Вот ее содержание:', attachments=[]
-    )
-    await event.message.answer(
-        text="Абоба: детальное описание с бэка.",  # Содержание с бэка
-        attachments=[],
-    )
-    await bot.delete_message(event.message.body.mid)
-    await event.message.answer(
-        text="Вот мои команды:",
-        attachments=[
-            builder.as_markup(),
-        ],
-    )
+    await start_message(event)
 
 async def main():
     await dp.start_polling(bot)

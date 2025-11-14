@@ -83,7 +83,7 @@ async def get_user_tasks(
     """Получить все задачи пользователя по max_user_id"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
     payload = TaskQuery(user_id=user_id)
-    tasks = await task_service.get_tasks(payload=payload)
+    tasks = await task_service.get_tasks(payload)
     return [TaskRead.model_validate(task) for task in tasks]
 
 # --------------- CREATE ----------------

@@ -13,7 +13,7 @@ class TaskCreate(BaseModel):
     category_id: Optional[int]
 
 class TaskUpdate(BaseModel):
-    id: int
+    id: int = None
     title: Optional[str] = None
     description: Optional[str] = None
     expiration_date: Optional[datetime] = None

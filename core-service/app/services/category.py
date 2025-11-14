@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from ..repositories import CategoryRepository
 from ..models import User, Tag, Category, Task
-from ..schemas import CategoryCreate, CategoryUsersUpdateV2
+from ..schemas import CategoryCreate, CategoryUsersUpdateV2, CategoryUpdate
 from ..utils import *
 
 
@@ -62,6 +62,18 @@ class CategoryService:
         return await self.category_repo.create(payload)
 
     # --------------- UPDATE ----------------
+
+    async def patch(self, payload: CategoryUpdate) -> Category:
+        """
+        Обновляет категорию.
+        :param payload: данные для обновления категории (CategoryUpdate)
+        :return: обновленная категория
+        """
+        updated = await self.category_repo.update(payload)
+        if not updated:
+            raise HTTPException(status_code=400, detail="Не удалось обновить категорию")
+        category = await self.category_repo.get_by_id(payload.id)
+        return category
 
     async def add_user(self, payload: CategoryUsersUpdateV2) -> Category:
         """

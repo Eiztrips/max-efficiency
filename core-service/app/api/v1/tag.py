@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import models
-from ...schemas import TagRead, TaskRead, TagCreate
+from ...schemas import TagRead, TaskRead, TagCreate, TagUpdate
 from ...database import get_db
 from ...services import TagService
 
@@ -71,6 +71,26 @@ async def create_tag(
     tag = await tag_service.create(payload)
     return TagRead.model_validate(tag)
 
+# --------------- UPDATE ----------------
+
+@router.patch("/{id}", response_model=TagRead)
+async def update_tag(
+    id: int,
+    payload: TagUpdate,
+    tag_service: TagService = Depends(get_tag_service)
+):
+    """
+    Обновить тег по ID
+    """
+    payload.id = id
+    tag = await tag_service.patch(payload)
+    if not tag:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Тег с ID={id} не найден"
+        )
+    return TagRead.model_validate(tag)
+
 # --------------- DELETE ----------------
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -82,8 +102,3 @@ async def delete_tag(
     Удалить тег по ID
     """
     success = await tag_service.delete(id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Тег с ID={id} не найден"
-        )

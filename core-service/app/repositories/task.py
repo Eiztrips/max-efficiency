@@ -67,7 +67,7 @@ class TaskRepository(BaseRepository):
         )
         self.session.add(new_task)
         await self.session.commit()
-        await self.session.refresh(new_task, ['tags'])
+        await self.session.refresh(new_task) # , ['tags']
         return new_task
 
     # --------------- UPDATE ----------------
@@ -84,7 +84,7 @@ class TaskRepository(BaseRepository):
 
         self.session.add(task)
         await self.session.commit()
-        await self.session.refresh(task, ['tags'])
+        await self.session.refresh(task) # , ['tags']
         return task
 
     # --------------- TAGS ----------------

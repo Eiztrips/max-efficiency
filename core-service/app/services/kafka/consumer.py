@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..redis import RedisTaskService
 from ...database import get_db
-from ...schemas import TaskCreate
+from ...models import Tag
+from ...schemas import TaskCreate, TagCreate, TaskUpdate
 from ...config import settings
 from app.schemas.ai import OutputMessage
 
@@ -18,6 +19,10 @@ def get_task_service(db: AsyncSession = get_db):
 def get_category_service(db: AsyncSession = get_db):
     from app.services import CategoryService
     return CategoryService(db)
+
+def get_tag_service(db: AsyncSession = get_db):
+    from app.services import TagService
+    return TagService(db)
 
 class KafkaConsumerService:
     def __init__(self):
@@ -86,6 +91,9 @@ class KafkaConsumerService:
                 # В бота блин надо будет ошибку слать
                 print(f"Ошибка при создании задачи для task_id: {message.task_id}")
                 return
+
+
+            # TODO: Добавить теги, когда модель будет их выдавать
 
             await session.commit()
             print(f"Получено сообщение: {message}")
