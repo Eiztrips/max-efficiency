@@ -43,6 +43,7 @@ def load_config() -> dict:
 
 CONFIG = load_config()
 SYSTEM_PROMPT = CONFIG.get("PREPROMT", "")
+TEMPERATURE = CONFIG.get("TEMPERATURE", 0.7)
 
 
 class Task(BaseModel):
@@ -94,6 +95,7 @@ async def generate_task_metadata(input_msg: InputMessage) -> Optional[Task]:
             ],
             model=MODEL,
             format=Task.model_json_schema(),
+            options={"temperature": TEMPERATURE},
         )
 
         if response is None or response.message.content is None:
