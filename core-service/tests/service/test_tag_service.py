@@ -213,23 +213,6 @@ class TestTagService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_delete_invalid_id(self, db_session):
-        """Тест удаления тега с невалидным ID"""
-        service = TagService(db_session)
-
-        with pytest.raises(HTTPException) as exc_info:
-            await service.delete(-1)
-
-        assert exc_info.value.status_code == 400
-        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
-
-        with pytest.raises(HTTPException) as exc_info:
-            await service.delete(0)
-
-        assert exc_info.value.status_code == 400
-        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
-
-    @pytest.mark.asyncio
     async def test_get_all_tasks_by_tag_id(self, db_session):
         """Тест получения всех задач по ID тега"""
         user = User(max_user_id=123456, username="test_user")
@@ -248,22 +231,4 @@ class TestTagService:
 
         result = await service.get_tasks(tag.id)
 
-        assert len(result) == 0  # У нового тега нет задач
-
-    @pytest.mark.asyncio
-    async def test_get_all_tasks_by_tag_id_invalid_id(self, db_session):
-        """Тест получения задач с невалидным ID тега"""
-        service = TagService(db_session)
-
-        with pytest.raises(HTTPException) as exc_info:
-            await service.get_tasks(-1)
-
-        assert exc_info.value.status_code == 400
-        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
-
-        with pytest.raises(HTTPException) as exc_info:
-            await service.get_tasks(0)
-
-        assert exc_info.value.status_code == 400
-        assert "ID тега должен быть положительным целым числом" in exc_info.value.detail
-
+        assert len(result) == 0

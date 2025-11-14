@@ -17,7 +17,7 @@ def get_tag_service(db: AsyncSession = Depends(get_db)) -> TagService:
 
 # --------------- DEBUG: Получить все теги ----------------
 
-@router.get("", response_model=List[TagRead])
+@router.get("/debug", response_model=List[TagRead])
 async def get_tags(
     db: AsyncSession = Depends(get_db)
 ):
@@ -49,7 +49,7 @@ async def get_tag(
         )
     return TagRead.model_validate(tag)
 
-@router.get("/tags/{id}/tasks", response_model=List[TaskRead])
+@router.get("/{id}/tasks", response_model=List[TaskRead])
 async def get_tasks(
     id: int,
     tag_service: TagService = Depends(get_tag_service)

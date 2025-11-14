@@ -80,22 +80,6 @@ class TestUserAPI:
         assert response.status_code in [400, 404]
         assert "не найден" in response.json()["detail"] or "detail" in response.json()
 
-    @pytest.mark.asyncio
-    async def test_get_all_users(self, client: AsyncClient):
-        """Тест получения всех пользователей (DEBUG endpoint)"""
-        for i in range(3):
-            payload = {
-                "max_user_id": 10000 + i,
-                "username": f"user{i}"
-            }
-            await client.post("/api/v1/users", json=payload)
-
-        response = await client.get("/api/v1/users")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) >= 3
 
     @pytest.mark.asyncio
     async def test_get_user_categories(self, client: AsyncClient):
@@ -113,13 +97,14 @@ class TestUserAPI:
         }
         await client.post("/api/v1/categories", json=category_payload)
 
-        response = await client.get("/api/v1/users/user/12349/categories")
+        response = await client.get("/api/v1/users/12349/categories")
 
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         assert len(data) == 1
         assert data[0]["name"] == "test category"
+
 
     @pytest.mark.asyncio
     async def test_get_user_tags(self, client: AsyncClient):
@@ -145,7 +130,7 @@ class TestUserAPI:
         }
         await client.post("/api/v1/tags", json=tag_payload)
 
-        response = await client.get("/api/v1/users/user/12350/tags")
+        response = await client.get("/api/v1/users/12350/tags")
 
         assert response.status_code == 200
         data = response.json()

@@ -4,7 +4,6 @@ from fastapi import HTTPException
 from ..repositories import UserRepository
 from ..models import User, Tag, Category, Task
 from ..schemas import UserCreate
-from ..utils import *
 
 class UserService:
 
@@ -20,7 +19,6 @@ class UserService:
         :param max_user_id: max_user_id пользователя
         :return: внутренний user_id или None, если пользователь не найден
         """
-        _positive_int_validator(max_user_id, "max_user_id пользователя")
         user_id = await self.user_repo.get_id_by_max_user_id(max_user_id)
         if not(await self.get_by_id(user_id)): raise HTTPException(
             status_code=404,
@@ -36,7 +34,6 @@ class UserService:
         :param user_id: id пользователя
         :return: объект пользователя или None, если пользователь не найден
         """
-        _positive_int_validator(user_id, "user_id пользователя")
         return await self.user_repo.get_by_id(user_id)
 
     async def get_by_username(self, username: str) -> Optional[User]:
@@ -45,7 +42,6 @@ class UserService:
         :param username: имя пользователя
         :return: объект пользователя или None, если пользователь не найден
         """
-        _not_empty_str_validator(username, "username пользователя")
         return await self.user_repo.get_by_username(username)
 
     # --------------- GET USER RELATED DATA ----------------
@@ -57,7 +53,6 @@ class UserService:
         :param user_id: id пользователя
         :return: список тегов пользователя
         """
-        _positive_int_validator(user_id, "user_id пользователя")
         return await self.user_repo.get_tags_by_user_id(user_id)
 
     async def get_categories(self, user_id: int) -> Sequence[Category]:
@@ -66,7 +61,6 @@ class UserService:
         :param user_id: id пользователя
         :return: список категорий пользователя
         """
-        _positive_int_validator(user_id, "user_id пользователя")
         return await self.user_repo.get_categories_by_user_id(user_id)
 
     async def get_tasks(self, user_id: int) -> Sequence[Task]:
@@ -75,7 +69,6 @@ class UserService:
         :param user_id: id пользователя
         :return: список задач пользователя
         """
-        _positive_int_validator(user_id, "user_id пользователя")
         return await self.user_repo.get_tasks_by_user_id(user_id)
 
     # --------------- CREATE USER ----------------
@@ -92,17 +85,3 @@ class UserService:
         return existing_user_by_max_user_id or await self.user_repo.create(payload)
 
     # --------------- UPDATE USER ----------------
-
-    """ Пока не нада, менять нечего 
-    async def patch(self, user_id: int, data: dict) -> Optional[User]:
-        \"""
-        Обновляет данные пользователя.
-        :param user_id: user_id пользователя
-        :param data: словарь с данными для обновления
-        :return: обновленный объект пользователя или None, если пользователь не найден
-        \"""
-        _positive_int_validator(user_id, "ID пользователя")
-        _not_empty_dict_validator(data, "данные для обновления пользователя")
-        _dict_keys_constant_validator(data, {"id", "max_user_id"})
-        return await self.user_repo.patch(user_id, data)
-    """

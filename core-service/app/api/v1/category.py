@@ -20,7 +20,7 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 # --------------- DEBUG: Получить все категории ----------------
 
-@router.get("", response_model=List[CategoryRead])
+@router.get("/debug", response_model=List[CategoryRead])
 async def get_categories(
     db: AsyncSession = Depends(get_db)
 ):
@@ -106,7 +106,7 @@ async def create_category(
 
 # --------------- UPDATE ----------------
 
-@router.patch("/users", response_model=CategoryRead)
+@router.post("/{category_id}/users/{max_user_id}", response_model=CategoryRead)
 async def add_user_to_category(
     payload: CategoryUsersUpdate,
     category_service: CategoryService = Depends(get_category_service),
@@ -123,7 +123,7 @@ async def add_user_to_category(
         )
     return CategoryRead.model_validate(category)
 
-@router.patch("/{category_id}/users/remove/{max_user_id}", response_model=CategoryRead)
+@router.delete("/{category_id}/users/{max_user_id}", response_model=CategoryRead)
 async def remove_user_from_category(
     category_id: int,
     max_user_id: int,

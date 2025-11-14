@@ -90,31 +90,6 @@ class TestTagAPI:
         assert "не найден" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_get_all_tags(self, client: AsyncClient):
-        """Тест получения всех тегов (DEBUG endpoint)"""
-        user_payload = {"max_user_id": 30004, "username": "user4"}
-        await client.post("/api/v1/users", json=user_payload)
-
-        category_payload = {"max_user_id": 30004, "name": "Category"}
-        cat_response = await client.post("/api/v1/categories", json=category_payload)
-        category_id = cat_response.json()["id"]
-
-        for i in range(3):
-            tag_payload = {
-                "category_id": category_id,
-                "name": f"Tag{i}",
-                "color": f"#{i:02d}0000"
-            }
-            await client.post("/api/v1/tags", json=tag_payload)
-
-        response = await client.get("/api/v1/tags")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) >= 3
-
-    @pytest.mark.asyncio
     async def test_delete_tag(self, client: AsyncClient):
         """Тест удаления тега"""
         user_payload = {"max_user_id": 30005, "username": "user5"}

@@ -19,7 +19,6 @@ class TagService:
         :param id: ID тега
         :return: объект тега или None, если тег не найден
         """
-        _positive_int_validator(id, "ID тега")
         return await self.tag_repo.get_by_id(id)
 
     async def get_tasks(self, tag_id: int) -> Sequence[Task]:
@@ -28,7 +27,6 @@ class TagService:
         :param tag_id: ID тега
         :return: список задач, связанных с тегом
         """
-        _positive_int_validator(tag_id, "ID тега")
         return await self.tag_repo.get_tasks(tag_id)
 
     # --------------- CREATE ----------------
@@ -59,6 +57,5 @@ class TagService:
         :param id: ID тега
         :return: True, если тег был успешно удален, иначе False
         """
-        _positive_int_validator(id, "ID тега")
         return await self.tag_repo.delete(id)
 

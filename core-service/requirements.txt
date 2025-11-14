@@ -11,3 +11,4 @@ greenlet
 asyncpg
 aiokafka
 httpx
+email-validator

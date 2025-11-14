@@ -20,7 +20,7 @@ def get_task_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 # --------------- DEBUG: Получить всех пользователей ----------------
 
-@router.get("", response_model=List[UserRead])
+@router.get("/debug", response_model=List[UserRead])
 async def get_users(
     db: AsyncSession = Depends(get_db)
 ):
@@ -54,7 +54,7 @@ async def get_user(
         )
     return UserRead.model_validate(user)
 
-@router.get("/user/{max_user_id}/categories", response_model=List[CategoryRead])
+@router.get("/{max_user_id}/categories", response_model=List[CategoryRead])
 async def get_user_categories(
     max_user_id: int,
     user_service: UserService = Depends(get_user_service)
@@ -64,7 +64,7 @@ async def get_user_categories(
     categories = await user_service.get_categories(user_id)
     return [CategoryRead.model_validate(category) for category in categories]
 
-@router.get("/user/{max_user_id}/tags", response_model=List[TagRead])
+@router.get("/{max_user_id}/tags", response_model=List[TagRead])
 async def get_user_tags(
     max_user_id: int,
     user_service: UserService = Depends(get_user_service)
@@ -74,7 +74,7 @@ async def get_user_tags(
     tags = await user_service.get_tags(user_id)
     return [TagRead.model_validate(tag) for tag in tags]
 
-@router.get("/user/{max_user_id}/tasks", response_model=List[TaskRead])
+@router.get("/{max_user_id}/tasks", response_model=List[TaskRead])
 async def get_user_tasks(
     max_user_id: int,
     user_service: UserService = Depends(get_user_service),
@@ -96,23 +96,3 @@ async def create_user(
     """Создать или получить существующего пользователя"""
     response = await user_service.get_or_create(payload)
     return UserRead.model_validate(response)
-
-# --------------- UPDATE ----------------
-
-""" не используется, но пусть будет
-@router.patch("/{max_user_id}", response_model=UserRead)
-async def update_user(
-    max_user_id: int,
-    user_data: dict,
-    user_service: UserService = Depends(get_user_service)
-):
-    \"""Обновить данные пользователя\"""
-    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
-    user = await user_service.patch(user_id, user_data)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Пользователь с max_user_id={max_user_id} не найден"
-        )
-    return UserRead.model_validate(user)
-"""

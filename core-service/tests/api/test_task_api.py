@@ -43,15 +43,6 @@ class TestTaskAPI:
         assert "detail" in response.json()
 
     @pytest.mark.asyncio
-    async def test_get_all_tasks_debug(self, client: AsyncClient):
-        """Тест получения всех задач (DEBUG endpoint)"""
-        response = await client.get("/api/v1/tasks")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-
-    @pytest.mark.asyncio
     async def test_get_task_by_id(self, client: AsyncClient, db_session):
         """Тест получения задачи по ID"""
         user_payload = {"max_user_id": 40002, "username": "user2"}

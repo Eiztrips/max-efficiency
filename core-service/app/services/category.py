@@ -23,7 +23,6 @@ class CategoryService:
         :param id: ID категории
         :return: объект категории или None, если категория не найдена
         """
-        _positive_int_validator(id, "ID категории")
         return await self.category_repo.get_by_id(id)
 
     async def get_joined_users(self, category_id: int) -> Sequence[User]:
@@ -32,7 +31,6 @@ class CategoryService:
         :param category_id: ID категории
         :return: список пользователей, связанных с категорией
         """
-        _positive_int_validator(category_id, "ID категории")
         return await self.category_repo.get_joined_users(category_id)
 
     async def get_tags(self, category_id: int) -> Sequence[Tag]:
@@ -41,7 +39,6 @@ class CategoryService:
         :param category_id: ID категории
         :return: список тегов в категории
         """
-        _positive_int_validator(category_id, "ID категории")
         return await self.category_repo.get_tags(category_id)
 
     async def get_tasks(self, category_id: int) -> Sequence[Task]:
@@ -50,7 +47,6 @@ class CategoryService:
         :param category_id: ID категории
         :return: список задач в категории
         """
-        _positive_int_validator(category_id, "ID категории")
         return await self.category_repo.get_tasks(category_id)
 
     get_id_by_name_and_owner = CategoryRepository.get_id_by_name_and_owner
@@ -99,10 +95,8 @@ class CategoryService:
         :param id: ID категории
         :return: True, если категория была успешно удалена, иначе False
         """
-        _positive_int_validator(id, "ID категории")
 
         category = await self.category_repo.get_by_id(id)
-        _category_exists_validator(category)
 
         deleted = await self.category_repo.delete(id)
         if not deleted:

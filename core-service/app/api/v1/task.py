@@ -22,7 +22,7 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 # --------------- DEBUG: Получить все таски ----------------
 
-@router.get("", response_model=List[TaskRead])
+@router.get("/debug", response_model=List[TaskRead])
 async def get_tasks(
     db: AsyncSession = Depends(get_db)
 ):
