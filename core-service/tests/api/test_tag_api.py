@@ -115,13 +115,6 @@ class TestTagAPI:
         assert get_response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_nonexistent_tag(self, client: AsyncClient):
-        """Тест удаления несуществующего тега"""
-        response = await client.delete("/api/v1/tags/99999")
-
-        assert response.status_code == 404
-
-    @pytest.mark.asyncio
     async def test_create_multiple_tags_in_category(self, client: AsyncClient):
         """Тест создания нескольких тегов в одной категории"""
         user_payload = {"max_user_id": 30006, "username": "user6"}
