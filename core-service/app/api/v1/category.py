@@ -166,8 +166,3 @@ async def delete_category(
 ):
     """Удалить категорию по ID"""
     success = await category_service.delete(id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Категория с ID={id} не найдена"
-        )

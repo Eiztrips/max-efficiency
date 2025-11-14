@@ -52,7 +52,7 @@ class TaskService:
         :param category_id:
         :return: None
         """
-        url = f"{API_DEFAULT_URL}/tasks/generate"
+        url = f"{API_DEFAULT_URL}/tasks"
         task_data = {
             "max_user_id": max_user_id,
             "prompt": prompt,

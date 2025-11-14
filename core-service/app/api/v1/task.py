@@ -74,7 +74,7 @@ async def get_tasks(
         to_date=to_date,
         search=search
     )
-    tasks = await task_service.get_tasks(payload=payload)
+    tasks = await task_service.get_tasks(payload)
     return [TaskRead.model_validate(task) for task in tasks]
 
 @router.get("/{id}", response_model=TaskRead)
@@ -136,8 +136,3 @@ async def delete_task(
     Удалить задачу по ID
     """
     success = await task_service.delete(id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Задача с ID={id} не найдена"
-        )

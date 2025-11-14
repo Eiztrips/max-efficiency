@@ -102,8 +102,3 @@ async def delete_tag(
     Удалить тег по ID
     """
     success = await tag_service.delete(id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Тег с ID={id} не найден"
-        )
