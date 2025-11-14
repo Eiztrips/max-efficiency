@@ -7,7 +7,7 @@ from .redis.redis import RedisTaskService
 from ..repositories import TaskRepository, TagRepository, CategoryRepository
 from ..models import Task
 from ..schemas import TaskCreate, TaskQuery, TaskUpdate
-from ..schemas.ai import InputMessage, APIInputRequest, TaskInputRequest, RedisTaskMessage
+from ..schemas.ai import InputMessage, APIInputRequest, RedisTaskMessage
 from .kafka import kafka_producer
 
 
@@ -71,21 +71,13 @@ class TaskService:
 
     # --------------- CREATE ----------------
 
-    async def create(self, payload: TaskInputRequest) -> Optional[Task]:
+    async def create(self, payload: TaskCreate) -> Optional[Task]:
             """
             Создает новую задачу для пользователя.
-            :param payload: данные для создания задачи в формате TaskInputRequest
+            :param payload: данные для создания задачи в формате TaskCreate
             :return: созданная задача или None, если создание не удалось
             """
-            user_id = await self.user_service.map_max_user_id_to_user_id(payload.max_user_id)
-            task_create = TaskCreate(
-                user_id=user_id,
-                title=payload.title,
-                description=payload.description,
-                category_id=payload.category_id,
-                expiration_date=payload.expiration_date
-            )
-            return await self.task_repo.create(task_create)
+            return await self.task_repo.create(payload)
 
     # --------------- UPDATE ----------------
 

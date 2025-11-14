@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ... import models
 from ...schemas import TaskRead, TaskCreate
 from ...database import get_db
-from ...schemas.ai import APIInputRequest, TaskInputRequest
-from ...schemas.task import TaskQuery, TaskUpdate
+from ...schemas.ai import APIInputRequest
+from ...schemas.task import TaskQuery, TaskUpdate, TaskCreate
 from ...services import TaskService, UserService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -107,7 +107,7 @@ async def generate_task(
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 async def create_task(
-    payload: TaskInputRequest,
+    payload: TaskCreate,
     task_service: TaskService = Depends(get_task_service)
 ):
     """

@@ -6,43 +6,6 @@ class TestTaskAPI:
     """Тесты для API задач"""
 
     @pytest.mark.asyncio
-    async def test_generate_task_via_ai(self, client: AsyncClient):
-        """Тест генерации задачи через AI"""
-        user_payload = {"max_user_id": 40001, "username": "taskuser"}
-        await client.post("/api/v1/users", json=user_payload)
-
-        category_payload = {
-            "max_user_id": 40001,
-            "name": "Work"
-        }
-        cat_response = await client.post("/api/v1/categories", json=category_payload)
-        category_id = cat_response.json()["id"]
-
-        task_payload = {
-            "max_user_id": 40001,
-            "prompt": "Create a task to finish the project report",
-            "category_id": category_id
-        }
-
-        response = await client.post("/api/v1/tasks", json=task_payload)
-
-        assert response.status_code == 202
-
-    @pytest.mark.asyncio
-    async def test_generate_task_nonexistent_user(self, client: AsyncClient):
-        """Тест генерации задачи для несуществующего пользователя"""
-        task_payload = {
-            "max_user_id": 99999,
-            "prompt": "Test prompt",
-            "category_id": 1
-        }
-
-        response = await client.post("/api/v1/tasks", json=task_payload)
-
-        assert response.status_code in [400, 404]
-        assert "detail" in response.json()
-
-    @pytest.mark.asyncio
     async def test_get_task_by_id(self, client: AsyncClient, db_session):
         """Тест получения задачи по ID"""
         user_payload = {"max_user_id": 40002, "username": "user2"}
@@ -179,40 +142,3 @@ class TestTaskAPI:
         data = response.json()
         assert isinstance(data, list)
         assert len(data) >= 3
-
-    @pytest.mark.asyncio
-    async def test_generate_task_with_tags(self, client: AsyncClient, db_session):
-        """Тест генерации задачи с тегами в категории"""
-        user_payload = {"max_user_id": 40005, "username": "user5"}
-        await client.post("/api/v1/users", json=user_payload)
-
-        category_payload = {
-            "max_user_id": 40005,
-            "name": "Tagged"
-        }
-        cat_response = await client.post("/api/v1/categories", json=category_payload)
-        category_id = cat_response.json()["id"]
-
-        tag_payload1 = {
-            "category_id": category_id,
-            "name": "Urgent",
-            "color": "#FF0000"
-        }
-        await client.post("/api/v1/tags", json=tag_payload1)
-
-        tag_payload2 = {
-            "category_id": category_id,
-            "name": "Important",
-            "color": "#00FF00"
-        }
-        await client.post("/api/v1/tags", json=tag_payload2)
-
-        task_payload = {
-            "max_user_id": 40005,
-            "prompt": "Complete urgent and important task",
-            "category_id": category_id
-        }
-
-        response = await client.post("/api/v1/tasks", json=task_payload)
-
-        assert response.status_code == 202
