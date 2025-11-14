@@ -34,6 +34,7 @@ NOTE todos:
 - Перенести стейт-машинку в отдельный класс
 - сделать рефактор кода не хранить все в мейн
 - кастомизировать текст
+- оптимизация по средствам кеширования (в проде интегрировать редис)
 
 """
 user_states: Dict[str, str] = {}
@@ -409,7 +410,7 @@ async def process_task_description(event: MessageCreated):
     category_name = data.get("selected_category", "")
     category_id = data.get("selected_category_id", None)
 
-    task_service.create(max_user_id=user_id, prompt=msg, category_id=category_id)
+    task_service.generate(max_user_id=user_id, prompt=msg, category_id=category_id)
 
     await event.message.answer(
         f'Задача в категории "{category_name}" создается...\nОписание: {msg}'

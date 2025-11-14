@@ -44,7 +44,7 @@ class TaskService:
         return response.json()
 
     @staticmethod
-    def create(max_user_id: int, prompt: str, category_id: int = None) -> None:
+    def generate(max_user_id: int, prompt: str, category_id: int = None) -> None:
         """
         Начать генерацию задачи.
         :param max_user_id:
@@ -52,7 +52,7 @@ class TaskService:
         :param category_id:
         :return: None
         """
-        url = f"{API_DEFAULT_URL}/tasks"
+        url = f"{API_DEFAULT_URL}/tasks/generate"
         task_data = {
             "max_user_id": max_user_id,
             "prompt": prompt,
