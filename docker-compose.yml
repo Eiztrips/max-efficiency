@@ -60,7 +60,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama
+    container_name: ai-ollama
     ports:
       - "11434:11434"
     volumes:
@@ -144,8 +144,8 @@ services:
       KAFKA_CONSUMER_GROUP: max-efficiency
       REDIS_URL: redis://redis:6379/0
       REDIS_CACHE_TTL: 3600
-    ports:
-      - "8000:8000"
+    #ports:
+    #  - "8000:8000"
     networks:
       - max-efficiency-net
     restart: unless-stopped
