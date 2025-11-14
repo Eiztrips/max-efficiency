@@ -163,6 +163,21 @@ services:
       - max-efficiency-net
     restart: unless-stopped
 
+  bot-service:
+    build:
+      context: ./bot-service
+      dockerfile: Dockerfile
+    container_name: bot-service
+    depends_on:
+      - core-service
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      API_DEFAULT_URL: http://core-service:8000/api/v1
+      SECRET_KEY: test_secret_key
+    networks:
+      - max-efficiency-net
+    restart: unless-stopped
+
 volumes:
   ollama-data:
   kafka_data:
