@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import models
-from ...schemas import UserRead, CategoryRead, CategoryCreate, TagRead, TaskRead, CategoryUpdate
+from ...schemas import UserRead, CategoryRead, CategoryCreate, TagRead, TaskRead
 from ...database import get_db
 from ...schemas.category import CategoryUsersUpdate, CategoryUsersUpdateV2, APICategoryCreate
 from ...services import CategoryService, UserService
@@ -123,20 +123,23 @@ async def add_user_to_category(
         )
     return CategoryRead.model_validate(category)
 
-@router.patch("/{category_id}/users/remove/{max_user_id}", response_model=CategoryUpdate)
+@router.patch("/{category_id}/users/remove/{max_user_id}", response_model=CategoryRead)
 async def remove_user_from_category(
-    payload: CategoryUsersUpdate,
-    category_service: CategoryService = Depends(get_category_service)
+    category_id: int,
+    max_user_id: int,
+    category_service: CategoryService = Depends(get_category_service),
+    user_service: UserService = Depends(get_user_service)
 ):
     """Удалить пользователя из категории"""
-    payload = CategoryUsersUpdateV2(**{"id": payload.id, "user_id": payload.user_id})
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
+    payload = CategoryUsersUpdateV2(**{"id": category_id, "user_id": user_id})
     category = await category_service.remove_user(payload)
     if not category:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось удалить пользователя из категории"
         )
-    return CategoryUpdate.model_validate(category)
+    return CategoryRead.model_validate(category)
 
 # --------------- DELETE ----------------
 

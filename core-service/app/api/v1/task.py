@@ -63,7 +63,7 @@ async def get_tasks(
     :query to_date: дата окончания для фильтрации (ISO формат)
     :query search: поисковый запрос по заголовку и описанию задачи
     """
-    user_id = user_service.map_max_user_id_to_user_id(max_user_id)
+    user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
     payload = TaskQuery(
         user_id=user_id,
         category_id=category_id,

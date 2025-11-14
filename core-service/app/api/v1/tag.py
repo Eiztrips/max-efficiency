@@ -62,13 +62,13 @@ async def get_tasks(
 
 @router.post("", response_model=TagRead, status_code=status.HTTP_201_CREATED)
 async def create_tag(
-    pyload: TagCreate,
+    payload: TagCreate,
     tag_service: TagService = Depends(get_tag_service)
 ):
     """
     Создать новый тег
     """
-    tag = await tag_service.create(pyload)
+    tag = await tag_service.create(payload)
     return TagRead.model_validate(tag)
 
 # --------------- DELETE ----------------

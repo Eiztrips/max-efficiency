@@ -5,9 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import models
-from ...schemas import UserRead, UserCreate, CategoryRead, TagRead, TaskRead
+from ...schemas import UserRead, UserCreate, CategoryRead, TagRead, TaskRead, TaskQuery
 from ...database import get_db
-from ...services import UserService
+from ...services import UserService, TaskService
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -78,11 +78,12 @@ async def get_user_tags(
 async def get_user_tasks(
     max_user_id: int,
     user_service: UserService = Depends(get_user_service),
-    task_service: UserService = Depends(get_task_service)
+    task_service: TaskService = Depends(get_task_service)
 ):
     """Получить все задачи пользователя по max_user_id"""
     user_id = await user_service.map_max_user_id_to_user_id(max_user_id)
-    tasks = await task_service.get_tasks(user_id=user_id)
+    payload = TaskQuery(user_id=user_id)
+    tasks = await task_service.get_tasks(payload=payload)
     return [TaskRead.model_validate(task) for task in tasks]
 
 # --------------- CREATE ----------------
