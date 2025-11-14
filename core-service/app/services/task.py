@@ -7,7 +7,7 @@ from .redis.redis import RedisTaskService
 from ..repositories import TaskRepository, TagRepository, CategoryRepository
 from ..models import Task
 from ..schemas import TaskCreate, TaskQuery, TaskUpdate
-from ..schemas.ai import InputMessage, APIInputRequest, RedisTaskMessage
+from ..schemas.ai import InputMessage, APIInputRequest, TaskInputRequest, RedisTaskMessage
 from .kafka import kafka_producer
 
 
@@ -71,13 +71,21 @@ class TaskService:
 
     # --------------- CREATE ----------------
 
-    async def create(self, payload: TaskCreate) -> Optional[Task]:
+    async def create(self, payload: TaskInputRequest) -> Optional[Task]:
             """
             Создает новую задачу для пользователя.
-            :param payload: данные для создания задачи в формате TaskCreate
+            :param payload: данные для создания задачи в формате TaskInputRequest
             :return: созданная задача или None, если создание не удалось
             """
-            return await self.task_repo.create(payload)
+            user_id = await self.user_service.map_max_user_id_to_user_id(payload.max_user_id)
+            task_create = TaskCreate(
+                user_id=user_id,
+                title=payload.title,
+                description=payload.description,
+                category_id=payload.category_id,
+                expiration_date=payload.expiration_date
+            )
+            return await self.task_repo.create(task_create)
 
     # --------------- UPDATE ----------------
 
@@ -88,6 +96,17 @@ class TaskService:
         :return: обновленная задача или None, если задача не найдена
         """
         return await self.task_repo.patch(payload)
+
+    # --------------- TAGS ----------------
+
+    async def update_task_tags(self, task_id: int, tag_ids: list[int]) -> Optional[Task]:
+        """
+        Обновляет теги задачи (заменяет все теги)
+        :param task_id: ID задачи
+        :param tag_ids: список ID тегов
+        :return: обновленная задача или None
+        """
+        return await self.task_repo.update_task_tags(task_id, tag_ids)
 
     # --------------- DELETE ----------------
 

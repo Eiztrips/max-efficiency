@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Container,
   Flex,
@@ -7,56 +7,104 @@ import {
   CellList,
   CellHeader,
   CellSimple,
+  Spinner,
 } from "@maxhub/max-ui";
 import { useWebApp } from "../hooks/useWebApp";
+import apiService from "../services/api";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./ProfilePage.css";
 
+import { FaRegClipboard, FaCheck } from "react-icons/fa6";
+
 const ProfilePage = () => {
-  const { user, firstName, lastName, photoUrl } = useWebApp();
+  const { user, userId, firstName, lastName, photoUrl } = useWebApp();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [tasks, setTasks] = useState([]);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(false);
 
   const displayName = firstName || lastName ? `${firstName} ${lastName}` : user?.username || "Пользователь";
   const fallback = firstName || lastName ? `${firstName[0]}${lastName[0]}` : "ME";
 
-  const tasks = [
-    { id: 1, title: "Задача 1", completed: true, createdAt: "2025-11-10", completedAt: "2025-11-11" },
-    { id: 2, title: "Задача 2", completed: true, createdAt: "2025-11-10", completedAt: "2025-11-12" },
-    { id: 3, title: "Задача 3", completed: false, createdAt: "2025-11-11", completedAt: null },
-    { id: 4, title: "Задача 4", completed: true, createdAt: "2025-11-12", completedAt: "2025-11-13" },
-    { id: 5, title: "Задача 5", completed: false, createdAt: "2025-11-13", completedAt: null },
-  ];
+  useEffect(() => {
+    if (userId) {
+      loadTasks();
+      loadUser();
+    }
+  }, [userId]);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getUserTasks(userId);
+      setTasks(data);
+    } catch (err) {
+      console.error('Failed to load tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUser = async () => {
+    try {
+      const userData = await apiService.getUserProfile(userId);
+      setUserData(userData);
+    } catch (err) {
+      console.error('Failed to load user data:', err);
+    }
+  };
+
+
+  const handleCopyId = () => {
+    if (userId) {
+      navigator.clipboard.writeText(userId.toString());
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  };
 
   const stats = useMemo(() => {
     const total = tasks.length;
-    const completed = tasks.filter(t => t.completed).length;
+    const completed = tasks.filter(t => t.is_completed).length;
     const pending = total - completed;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
+    const ownedCategories = userData?.categories_owned?.length || 0;
+    const joinedCategories = userData?.categories_joined?.length || 0;
+
     const tasksByDate = {};
     tasks.forEach(task => {
-      const date = task.completedAt || task.createdAt;
+      const date = task.updated_at ? task.updated_at.split('T')[0] : task.created_at.split('T')[0];
       if (!tasksByDate[date]) {
         tasksByDate[date] = { completed: 0, pending: 0 };
       }
-      if (task.completed) {
+      if (task.is_completed) {
         tasksByDate[date].completed++;
       } else {
         tasksByDate[date].pending++;
       }
     });
 
-    return { total, completed, pending, completionRate, tasksByDate };
-  }, [tasks]);
+    return { total, completed, pending, completionRate, ownedCategories, joinedCategories, tasksByDate };
+  }, [tasks, user]);
 
   const tasksForSelectedDate = useMemo(() => {
     const dateStr = selectedDate.toISOString().split('T')[0];
     return tasks.filter(task => {
-      const taskDate = task.completedAt || task.createdAt;
+      const taskDate = task.updated_at ? task.updated_at.split('T')[0] : task.created_at.split('T')[0];
       return taskDate === dateStr;
     });
   }, [selectedDate, tasks]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spinner size="large" />
+      </div>
+    );
+  }
 
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
@@ -94,6 +142,26 @@ const ProfilePage = () => {
               <Typography.Headline variant="large-strong">
                 {displayName}
               </Typography.Headline>
+              <Flex 
+                align="center" 
+                gap={8} 
+                style={{ 
+                  marginTop: '4px',
+                  padding: '6px 12px',
+                  backgroundColor: 'var(--maxui_background_secondary)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onClick={handleCopyId}
+              >
+                <Typography.Body variant="small" style={{ color: "var(--maxui_text_secondary)" }}>
+                  MAX ID: {userId}
+                </Typography.Body>
+                <Typography.Body variant="small" style={{ color: "var(--maxui_text_accent)" }}>
+                  {copiedId ? <><FaCheck /> Скопировано</> : <><FaRegClipboard /> Копировать</>}
+                </Typography.Body>
+              </Flex>
             </Flex>
           </Flex>
         </Container>
@@ -115,6 +183,22 @@ const ProfilePage = () => {
           <CellSimple
             title="Процент выполнения"
             after={<Typography.Body variant="medium-strong">{stats.completionRate}%</Typography.Body>}
+          />
+        </CellList>
+
+        <CellList style={{ width: "100%", maxWidth: "100%" }}>
+          <CellHeader>Категории</CellHeader>
+          <CellSimple
+            title="Мои категории"
+            after={<Typography.Body variant="medium-strong">{stats.ownedCategories}</Typography.Body>}
+          />
+          <CellSimple
+            title="Участвую в категориях"
+            after={<Typography.Body variant="medium-strong">{stats.joinedCategories}</Typography.Body>}
+          />
+          <CellSimple
+            title="Всего категорий"
+            after={<Typography.Body variant="medium-strong">{stats.ownedCategories + stats.joinedCategories}</Typography.Body>}
           />
         </CellList>
 
@@ -152,7 +236,7 @@ const ProfilePage = () => {
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: task.completed ? 'var(--max_color_positive)' : 'var(--max_color_warning)'
+                    backgroundColor: task.is_completed ? 'var(--max_color_positive)' : 'var(--max_color_warning)'
                   }} />
                 }
               />

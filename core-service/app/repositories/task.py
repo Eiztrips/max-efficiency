@@ -87,6 +87,61 @@ class TaskRepository(BaseRepository):
         await self.session.refresh(task, ['tags'])
         return task
 
+    # --------------- TAGS ----------------
+
+    async def update_task_tags(self, task_id: int, tag_ids: list[int]) -> Optional[Task]:
+        task = await self.get_by_id(task_id)
+        if not task:
+            return None
+
+        # Загружаем теги
+        from ..models import Tag
+        result = await self.session.execute(
+            select(Tag).where(Tag.id.in_(tag_ids))
+        )
+        tags = result.scalars().all()
+
+        # Заменяем теги
+        task.tags = list(tags)
+        await self.session.commit()
+        await self.session.refresh(task, ['tags'])
+        return task
+
+    async def add_tag_to_task(self, task_id: int, tag_id: int) -> Optional[Task]:
+        task = await self.get_by_id(task_id)
+        if not task:
+            return None
+
+        # Проверяем, что тег еще не добавлен
+        if any(tag.id == tag_id for tag in task.tags):
+            return task
+
+        # Загружаем тег
+        from ..models import Tag
+        result = await self.session.execute(
+            select(Tag).where(Tag.id == tag_id)
+        )
+        tag = result.scalar_one_or_none()
+        if not tag:
+            return None
+
+        # Добавляем тег
+        task.tags.append(tag)
+        await self.session.commit()
+        await self.session.refresh(task, ['tags'])
+        return task
+
+    async def remove_tag_from_task(self, task_id: int, tag_id: int) -> Optional[Task]:
+        task = await self.get_by_id(task_id)
+        if not task:
+            return None
+
+        # Удаляем тег
+        task.tags = [tag for tag in task.tags if tag.id != tag_id]
+        await self.session.commit()
+        await self.session.refresh(task, ['tags'])
+        return task
+
     # --------------- DELETE ----------------
 
     async def delete(self, id: int) -> bool:

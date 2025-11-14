@@ -21,7 +21,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       CLUSTER_ID: "5L6g3nShT-eMCtK--X86sw"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -68,7 +68,7 @@ services:
     networks:
       - max-efficiency-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD-SHELL", "ollama --version && ollama ps || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -123,6 +123,45 @@ services:
     restart: unless-stopped
     deploy:
       replicas: 1
+
+  core-service:
+    build:
+      context: ./core-service
+      dockerfile: Dockerfile
+    container_name: core-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@postgres:5432/max_efficiency_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_AI_REQUEST_TOPIC: task.ai.request
+      KAFKA_AI_RESPONSE_TOPIC: task.ai.response
+      KAFKA_CONSUMER_GROUP: max-efficiency
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_TTL: 3600
+    ports:
+      - "8000:8000"
+    networks:
+      - max-efficiency-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    depends_on:
+      - core-service
+    ports:
+      - "3000:80"
+    networks:
+      - max-efficiency-net
+    restart: unless-stopped
 
 volumes:
   ollama-data:

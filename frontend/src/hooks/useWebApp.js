@@ -23,7 +23,7 @@ export const useWebApp = () => {
     webApp,
     user,
     isReady,
-    userId: user?.id,
+    userId: user?.id || 97092446,
     firstName: user?.first_name || '',
     lastName: user?.last_name || '',
     username: user?.username,

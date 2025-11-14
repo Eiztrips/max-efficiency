@@ -20,6 +20,10 @@ class TaskUpdate(BaseModel):
     is_completed: Optional[bool] = None
     category_id: Optional[int] = None
 
+class TaskTagsUpdate(BaseModel):
+    task_id: int
+    tag_ids: list[int]
+
 class TaskQuery(BaseModel):
     user_id: int
     category_id: Optional[int] = None

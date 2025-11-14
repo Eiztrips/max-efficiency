@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ... import models
 from ...schemas import TaskRead, TaskCreate
 from ...database import get_db
-from ...schemas.ai import APIInputRequest
+from ...schemas.ai import APIInputRequest, TaskInputRequest
 from ...schemas.task import TaskQuery
 from ...services import TaskService, UserService
 
@@ -95,15 +95,64 @@ async def get_task(
 
 # --------------- CREATE ----------------
 
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
-async def create_task(
+@router.post("/generate", status_code=status.HTTP_202_ACCEPTED)
+async def generate_task(
     payload: APIInputRequest,
     task_service: TaskService = Depends(get_task_service)
 ):
     """
-    Создать новую задачу
+    Сгенерировать задачу с помощью AI
     """
     await task_service.generate_task(payload)
+
+@router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
+async def create_task(
+    payload: TaskInputRequest,
+    task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Создать задачу
+    """
+    task = await task_service.create(payload)
+    return TaskRead.model_validate(task)
+
+# --------------- UPDATE ----------------
+
+@router.patch("/{id}", response_model=TaskRead)
+async def update_task(
+    id: int,
+    payload: dict,
+    task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Обновить задачу по ID
+    """
+    from ...schemas.task import TaskUpdate
+    task_update = TaskUpdate(id=id, **payload)
+    task = await task_service.patch(task_update)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID={id} не найдена"
+        )
+    return TaskRead.model_validate(task)
+
+@router.put("/{task_id}/tags", response_model=TaskRead)
+async def update_task_tags(
+    task_id: int,
+    tag_ids: List[int],
+    task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Обновить теги задачи
+    """
+    task = await task_service.update_task_tags(task_id, tag_ids)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID={task_id} не найдена"
+        )
+    return TaskRead.model_validate(task)
 
 
 # --------------- DELETE ----------------

@@ -8,6 +8,14 @@ class APIInputRequest(BaseModel):
     prompt: str
     category_id: int
 
+class TaskInputRequest(BaseModel):
+    max_user_id: int
+    title: str
+    description: Optional[str] = None
+    category_id: int
+    expiration_date: Optional[str] = None
+
+
 class InputMessage(BaseModel):
     task_id: str = None # Генерируется в процессе обработки
     prompt: str

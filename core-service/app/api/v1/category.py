@@ -70,7 +70,7 @@ async def get_category_tags(
 ):
     """Получить все теги категории по ID категории"""
     tags = await category_service.get_tags(id)
-    return [TaskRead.model_validate(tag) for tag in tags]
+    return [TagRead.model_validate(tag) for tag in tags]
 
 @router.get("/{id}/tasks", response_model=List[TaskRead])
 async def get_category_tasks(
