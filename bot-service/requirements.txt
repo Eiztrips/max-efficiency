@@ -1,0 +1,5 @@
+maxapi
+examples
+pydantic
+pydantic-settings
+requests

@@ -8,6 +8,7 @@ from examples.keyboard.main import payload
 from maxapi import Bot, Dispatcher, F
 from maxapi.filters import BaseFilter
 from maxapi.filters.callback_payload import CallbackPayload
+from maxapi.methods.delete_chat import DeleteChat
 from maxapi.types import (
     BotStarted,
     CallbackButton,
@@ -20,7 +21,9 @@ from maxapi.types.callback import Callback
 from maxapi.types.chats import Chat
 from maxapi.types.message import Message
 from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
-from settings import settings
+
+from . import settings
+from .services import user_service
 
 bot = Bot(settings.BOT_TOKEN)
 dp = Dispatcher()
@@ -173,21 +176,15 @@ builder.row(
     CallbackButton(
         text="Создать задачу",
         payload=ActionButton(foo="create_task", action="edit").pack(),
-    )
-)
-builder.row(
+    ),
     CallbackButton(
         text="Управление категориями",
         payload=ActionButton(foo="manage_category", action="edit").pack(),
-    )
-)
-builder.row(
+    ),
     CallbackButton(
         text="Посмотреть ближайшие задачи",
         payload=ActionButton(foo="nearest_task", action="edit").pack(),
-    )
-)
-builder.row(
+    ),
     CallbackButton(
         text="Поиск задач по тегам",
         payload=ActionButton(foo="tasks_on_tags", action="edit").pack(),
@@ -197,20 +194,45 @@ builder.row(
 
 @dp.bot_started()
 async def bot_started(event: BotStarted):
-    await bot.send_message(
-        chat_id=event.chat_id,
-        text=f"Привет {event.user.first_name} {event.user.last_name}! Я бот для повышения твоей эффективности.\n\n"
-        "Со мной ты можешь:\n"
-        "1) Создавать для себя задачи\n"
-        "2) Делить задачи по категориям\n"
-        "3) Ставить задачи перед своей командой, добавляя новых пользователей\n\n"
-        "А главное - я сформирую задачи за тебя! С тебя требуется только ввести описание задачи, остальное будет на мне!\n\n"
-        "Теперь пропиши команду /start, что бы начать использование бота.",
-    )
+    if user_service.get_user_by_max_user_id(event.user.user_id) is None:
+        user_service.create_user(
+            max_user_id=event.user.user_id,
+            username=event.user.username,
+        )
+        await bot.send_message(
+            chat_id=event.chat_id,
+            text=f"Привет {event.user.first_name}! Я бот для повышения твоей эффективности.\n\n"
+                 "Со мной ты можешь:\n"
+                 "1) Создавать для себя задачи\n"
+                 "2) Делить задачи по категориям\n"
+                 "3) Ставить задачи перед своей командой, добавляя новых пользователей\n\n"
+                 "А главное - я сформирую задачи за тебя! С тебя требуется только ввести описание задачи, остальное будет на мне!\n\n",
+            attachments=[
+                builder.as_markup(),
+            ]
+        )
+    else:
+        await bot.send_message(
+            chat_id=event.chat_id,
+            # TODO: вывод ближайших задач или что-то еще полезное
+            text="С возвращением! Пропиши команду /start, что бы продолжить использование бота.",
+            attachments=[
+                builder.as_markup(),
+            ]
+        )
 
 @dp.message_created(Command("start"))
 async def start(event: MessageCreated):
+    chat_id, user_id = event.get_ids()[0], event.get_ids()[1]
+    if user_service.get_user_by_max_user_id(user_id) is None:
+        await bot.send_message(
+            chat_id=event.chat.chat_id,
+            text="Вы не зарегистрированы! Пожалуйста, начните чат со мной снова."
+        )
+        # В идеале await asyncio.sleep(10) + удаление чата, но либу надо форкать
+        return
     await event.message.answer(
+        # TODO: вывод ближайших задач или что-то еще полезное
         text="Вот мои команды:",
         attachments=[
             builder.as_markup(),
