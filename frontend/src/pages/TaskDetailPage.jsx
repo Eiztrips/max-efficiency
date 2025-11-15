@@ -369,7 +369,7 @@ const TaskDetailPage = ({ task, categories = [], onClose, onSave, onDelete }) =>
         </CellList>
 
         {/* Comment */}
-        <CellList mode="island" header={<CellHeader>Комментарий</CellHeader>} style={{ width: "100%" }}>
+        {/* <CellList mode="island" header={<CellHeader>Комментарий</CellHeader>} style={{ width: "100%" }}>
           <div style={{ padding: "12px 16px" }}>
             <Textarea
               mode="secondary"
@@ -386,7 +386,7 @@ const TaskDetailPage = ({ task, categories = [], onClose, onSave, onDelete }) =>
               }}
             />
           </div>
-        </CellList>
+        </CellList> */}
 
         {/* Actions */}
         <Container style={{ width: "100%", maxWidth: "100%", paddingLeft: 0, paddingRight: 0 }}>
