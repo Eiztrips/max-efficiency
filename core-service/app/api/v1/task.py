@@ -8,7 +8,7 @@ from ... import models
 from ...schemas import TaskRead, TaskCreate
 from ...database import get_db
 from ...schemas.ai import APIInputRequest
-from ...schemas.task import TaskQuery, TaskUpdate, TaskCreate
+from ...schemas.task import TaskQuery, TaskUpdate, TaskCreate, TaskCreateRequest
 from ...services import TaskService, UserService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -107,13 +107,22 @@ async def generate_task(
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 async def create_task(
-    payload: TaskCreate,
+    payload: TaskCreateRequest,
     task_service: TaskService = Depends(get_task_service)
 ):
     """
     Создать задачу
     """
-    task = await task_service.create(payload)
+    user_id = await user_service.map_max_user_id_to_user_id(payload.max_user_id)
+    task_create = TaskCreate(
+        user_id=user_id,
+        title=payload.title,
+        description=payload.description,
+        expiration_date=payload.expiration_date,
+        is_completed=payload.is_completed,
+        category_id=payload.category_id
+    )
+    task = await task_service.create(task_create)
     return TaskRead.model_validate(task)
 
 # --------------- UPDATE ----------------
