@@ -19,6 +19,7 @@ import asyncio
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 from ollama import AsyncClient
 from pydantic import BaseModel, Field
+from dateutil import parser as date_parser
 
 # Конфигурация env задается композом
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092")
@@ -137,6 +138,16 @@ async def process_message(input_msg: InputMessage) -> OutputMessage:
     if task is None:
         logger.warning("Failed to generate task meta, using empty defaults")
         task = Task(title="", description="", tags=[], category="")
+
+    # Нормализуем дату дедлайна в ISO формат
+    if task.expiration_date:
+        try:
+            parsed_date = date_parser.parse(task.expiration_date)
+            task.expiration_date = parsed_date.isoformat()
+            logger.info(f"Parsed expiration_date: {task.expiration_date}")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse expiration_date '{task.expiration_date}': {e}, setting to None")
+            task.expiration_date = None
 
     message = OutputMessage(
         task_id=input_msg.task_id,

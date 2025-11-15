@@ -93,7 +93,8 @@ const ProfilePage = () => {
   const tasksForSelectedDate = useMemo(() => {
     const dateStr = selectedDate.toISOString().split('T')[0];
     return tasks.filter(task => {
-      const taskDate = task.updated_at ? task.updated_at.split('T')[0] : task.created_at.split('T')[0];
+      if(!task.expiration_date) return false;
+      const taskDate = task.expiration_date ? task.expiration_date.split('T')[0] : task.expiration_date.split('T')[0];
       return taskDate === dateStr;
     });
   }, [selectedDate, tasks]);
