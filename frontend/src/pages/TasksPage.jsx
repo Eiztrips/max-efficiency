@@ -87,10 +87,8 @@ const TasksPage = () => {
 
   const handleCreateManualTask = async (data) => {
     try {
-      const userData = await apiService.getUserProfile(userId);
-
       await apiService.createTask({
-        user_id: userData.id,
+        max_user_id: userId,
         title: data.title,
         description: data.description || null,
         category_id: data.category_id,
