@@ -10,6 +10,10 @@ class ApiService {
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
+    //FIXME: Для прода кидать на апи в заголовке строку initData для аунтефикации
+    // https://dev.max.ru/docs/webapps/validation
+    // Не успею сделать да простят нас
+
     try {
       const res = await axios({
         url,

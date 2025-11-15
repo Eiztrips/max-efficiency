@@ -39,6 +39,27 @@ class TagService:
         """
         return await self.tag_repo.create(payload)
 
+    async def get_or_create_by_name(self, name: str, category_id: int, color: str = "#3b82f6") -> Optional[Tag]:
+        """
+        Получает существующий тег или создает новый, если тег с таким именем не существует в категории.
+        :param name: название тега
+        :param category_id: ID категории
+        :param color: цвет тега (по умолчанию синий)
+        :return: объект тега
+        """
+        # Проверяем, существует ли тег с таким именем в категории
+        existing_tag = await self.tag_repo.get_by_name_and_category(name, category_id)
+        if existing_tag:
+            return existing_tag
+        
+        # Создаем новый тег
+        tag_create = TagCreate(
+            name=name,
+            category_id=category_id,
+            color=color
+        )
+        return await self.tag_repo.create(tag_create)
+
     # --------------- UPDATE ----------------
 
     async def patch(self, payload: TagUpdate) -> Optional[Tag]:

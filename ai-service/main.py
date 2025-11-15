@@ -101,7 +101,7 @@ async def generate_task_metadata(input_msg: InputMessage) -> Optional[Task]:
         if response is None or response.message.content is None:
             logger.error("No response from Ollama")
             return None
-
+        print("Ollama response:", response.message.content)
         task_obj = Task.model_validate_json(response.message.content)
         return task_obj
 

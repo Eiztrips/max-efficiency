@@ -1,15 +1,37 @@
 from aiokafka import AIOKafkaConsumer
 import json
 import asyncio
+import random
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..redis import RedisTaskService
 from ...database import get_db
 from ...models import Tag
-from ...schemas import TaskCreate, TagCreate, TaskUpdate
+from ...schemas import TaskCreate, TagCreate, TagUpdate
 from ...config import settings
 from app.schemas.ai import OutputMessage
+
+# Палитра цветов для тегов
+TAG_COLORS = [
+    "#ef4444",  # red
+    "#f97316",  # orange
+    "#f59e0b",  # amber
+    "#eab308",  # yellow
+    "#84cc16",  # lime
+    "#22c55e",  # green
+    "#10b981",  # emerald
+    "#14b8a6",  # teal
+    "#06b6d4",  # cyan
+    "#0ea5e9",  # sky
+    "#3b82f6",  # blue
+    "#6366f1",  # indigo
+    "#8b5cf6",  # violet
+    "#a855f7",  # purple
+    "#d946ef",  # fuchsia
+    "#ec4899",  # pink
+    "#f43f5e",  # rose
+]
 
 
 def get_task_service(db: AsyncSession = get_db):
@@ -58,9 +80,10 @@ class KafkaConsumerService:
         session = await db_gen.__anext__()
 
         try:
-            from app.services import TaskService, CategoryService
+            from app.services import TaskService, CategoryService, TagService
 
             task_service = TaskService(session)
+            tag_service = TagService(session)
             redis_data = await RedisTaskService.get_task(task_id=message.task_id)
             task_data = message.task
 
@@ -92,8 +115,24 @@ class KafkaConsumerService:
                 print(f"Ошибка при создании задачи для task_id: {message.task_id}")
                 return
 
-
-            # TODO: Добавить теги, когда модель будет их выдавать
+            # Обработка тегов от нейросети
+            if task_data.tags and len(task_data.tags) > 0:
+                tag_ids = []
+                for tag_name in task_data.tags:
+                    # Получаем или создаем тег с рандомным цветом
+                    random_color = random.choice(TAG_COLORS)
+                    tag = await tag_service.get_or_create_by_name(
+                        name=tag_name.strip(),
+                        category_id=category_id,
+                        color=random_color
+                    )
+                    if tag:
+                        tag_ids.append(tag.id)
+                
+                # Привязываем теги к задаче
+                if tag_ids:
+                    await task_service.update_task_tags(created_task.id, tag_ids)
+                    print(f"Добавлено {len(tag_ids)} тегов к задаче {created_task.id}")
 
             await session.commit()
             print(f"Получено сообщение: {message}")

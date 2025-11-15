@@ -28,6 +28,14 @@ class TagRepository(BaseRepository):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_name_and_category(self, name: str, category_id: int) -> Optional[Tag]:
+        result = await self.session.execute(
+            select(Tag)
+            .where(Tag.name == name)
+            .where(Tag.category_id == category_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_tasks(self, tag_id: int) -> Sequence[Task]:
         result = await self.session.execute(
             select(Tag)

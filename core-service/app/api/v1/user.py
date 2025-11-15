@@ -15,8 +15,8 @@ router = APIRouter(prefix="/users", tags=["users"])
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(db)
 
-def get_task_service(db: AsyncSession = Depends(get_db)) -> UserService:
-    return UserService(db)
+def get_task_service(db: AsyncSession = Depends(get_db)) -> TaskService:
+    return TaskService(db)
 
 # --------------- DEBUG: Получить всех пользователей ----------------
 
