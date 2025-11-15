@@ -108,7 +108,8 @@ async def generate_task(
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 async def create_task(
     payload: TaskCreateRequest,
-    task_service: TaskService = Depends(get_task_service)
+    task_service: TaskService = Depends(get_task_service),
+    user_service: UserService = Depends(get_user_service)
 ):
     """
     Создать задачу
