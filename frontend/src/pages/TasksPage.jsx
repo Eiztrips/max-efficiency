@@ -98,7 +98,6 @@ const TasksPage = () => {
       setShowNewTask(false);
     } catch (err) {
       console.error('Failed to create task:', err);
-      alert('Ошибка при создании задачи');
     }
   };
 
