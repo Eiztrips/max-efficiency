@@ -4,6 +4,14 @@ from typing import Optional
 
 # --------------- REQUEST -------------------
 
+class TaskCreateRequest(BaseModel):
+    max_user_id: int
+    title: str
+    description: Optional[str] = None
+    expiration_date: Optional[datetime] = None
+    is_completed: bool = False
+    category_id: Optional[int]
+
 class TaskCreate(BaseModel):
     user_id: int
     title: str
